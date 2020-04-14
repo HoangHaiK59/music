@@ -1,0 +1,6 @@
+export const SpotifyConstants = {
+    AUTH_REQ: "AUTH_REQ",
+    AUTH_SUC: "AUTH_SUC",
+    AUTH_FAIL: "AUTH_FAIL"
+  };
+  

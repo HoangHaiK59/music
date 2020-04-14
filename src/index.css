@@ -11,3 +11,39 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+body,
+html,
+#root {
+  width: 100%;
+  height: 100%;
+}
+
+::-webkit-scrollbar {
+  width: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(88, 80, 80, 0.3);
+}
+
+.root-container {
+  width: 100%;
+  height: 100%;
+}
+
+.spotify-container {
+  background: linear-gradient(to right, rgb(231, 92, 92), rgb(240, 205, 8));
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.fixed-top-wrap {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 50px;
+}
+
