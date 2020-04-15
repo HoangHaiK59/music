@@ -11,14 +11,15 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
-
-body,
-html,
-#root {
+html {
   width: 100%;
-  height: 100%;
+  height: 100vh;
 }
 
+body, #root {
+  min-height: 100vh;
+  width: 100%;
+}
 ::-webkit-scrollbar {
   width: 5px;
 }
@@ -29,13 +30,14 @@ html,
 
 .root-container {
   width: 100%;
-  height: 100%;
+  min-height: 100vh;
+  background: #0f1424;
 }
 
 .spotify-container {
-  background: linear-gradient(to right, rgb(231, 92, 92), rgb(240, 205, 8));
+  background: #0f1424;
   width: 100%;
-  height: 100%;
+  min-height: 100vh;
   position: relative;
 }
 
@@ -45,5 +47,37 @@ html,
   left: 0;
   width: 100%;
   height: 50px;
+}
+
+.btn-green {
+  color: #FFF !important;
+  background-color: #1DB954 !important;
+  z-index: 1;
+}
+
+.btn-lg {
+  border-radius: 500px !important;
+  font-size: 16px;
+  line-height: 1;
+  padding: 10px 56px 21px;
+  min-width: 160px;
+}
+
+p,h4 {
+  color: #fff;
+  font-size: 13px;
+  line-height: 1;
+  font-weight: 100;
+}
+
+.card:hover {
+  transform: scale(1.02);
+  cursor: pointer;
+}
+
+.player-container {
+  width: 100%;
+  height: 90px;
+  background-color: #373638;
 }
 

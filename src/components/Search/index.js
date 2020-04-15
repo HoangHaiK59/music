@@ -4,6 +4,7 @@ import { axiosInstance } from "../../helper/axios";
 import hash from '../../helper/hash';
 import { request } from "request";
 
+
 class Search extends React.Component {
   constructor(props) {
     super(props);
@@ -18,7 +19,7 @@ class Search extends React.Component {
   }
 
   handleChange = event => {
-    this.setState({ query: event.target.value });
+    this.setState(event.target.value.length> 0 ? { query: event.target.value }: {query: event.target.value, data: null});
   };
 
   handleClick = event => {
@@ -31,8 +32,8 @@ class Search extends React.Component {
 
   componentDidMount() {
     let token = hash.access_token;
-    localStorage.setItem('token', token);
     if (token) {
+      localStorage.setItem('token', token);
       this.setState({ token: token })
     }
 
@@ -45,8 +46,13 @@ class Search extends React.Component {
     // .removeEventListener("click", this.handleClick);
   }
 
+  componentWillUpdate() {
+
+  }
+
   componentDidUpdate(prevProps, prevState) {
-    if (prevState.query !== this.state.query) {
+
+    if ((prevState.query !== this.state.query && this.state.query !== '')) {
       let url = `https://api.spotify.com/v1/search?q=${this.state.query}&market=VN&type=album,artist,playlist,track`
       fetch(url,
         {
@@ -57,15 +63,22 @@ class Search extends React.Component {
 
       )
         .then(res => {
-          res.json().then(data => this.setState({ data: data }))
+          if(res.json().then(data => {
+            if(data.error) {
+              this.props.history.push('/');
+            }else {
+              this.setState({data: data})
+            }
+          }));
         })
     }
+
   }
 
   render() {
     return (
-      <div className="container-fluid" style={{ position: 'absolute', top: '10%', width: '100%', height: '100%' }}>
-        <div className="container-wrapper">
+      <div className="container-fluid" style={{minHeight: '100%', backgroundColor: '#0f1424'}} >
+        <div className="container-wrapper" >
           {/* {this.state.toggle && <input onClick={this.handleClick} style={{width: '90%'}}
             id="query"
             type="text"
@@ -87,18 +100,102 @@ class Search extends React.Component {
           this.state.data && <div className="container-fluid">
             <div className="row">
               <div className="col-md-12">
-                <div className="d-flex flex-row flex-wrap justify-content-between">
+                {
+                  this.state.data.albums && <h4>Albums</h4>
+                }
+              </div>
+            </div>
+            <div className="row">
+              <div className="col-md-12">
+                <div className="d-flex flex-row flex-wrap justify-content-start">
                   {
-                    this.state.data.albums ? this.state.data.albums.items.map((item, id) => <div key={id} style={{ width: 400, height: 400 }}>
-                      <div className="d-flex flex-column">
-                        <img src={item.images['1'].url} style={{ width: item.images['1'].width, height: item.images['1'].heigth }} alt="" />
+                    this.state.data.albums ? this.state.data.albums.items.map((item, id) => <div key={id} style={{ width: 250, height: '20rem' }}>
+                      <div className="card" style={{width: '13rem', height: '18rem', background: '#383a3d'}}>
+                      <img src={item.images['1'] ? item.images['1'].url : '/dvd.png'} className="card-img-top" alt="..." style={{}}/>
+                        <div className="card-body">
+                          <h5 className="card-title" style={{fontSize: '15px', color: '#fff'}}>{item.name}</h5>
+                        </div>
                       </div>
-                    </div>): null
+                    </div>) : null
                   }
                 </div>
               </div>
             </div>
-          </div>
+
+            <div className="row">
+              <div className="col-md-12">
+                {
+                  this.state.data.artists && <h4>Artists</h4>
+                }
+              </div>
+            </div>
+            <div className="row">
+              <div className="col-md-12">
+                <div className="d-flex flex-row flex-wrap justify-content-start">
+                  {
+                    this.state.data.artists ? this.state.data.artists.items.map((item, id) => <div key={id} style={{ width: 250, height: '20rem' }}>
+                      <div className="card" style={{width: '13rem', height: '18rem', background: '#383a3d'}}>
+                      <img src={item.images['1'] ? item.images['1'].url : '/user.png'} className="card-img-top" alt="..." style={{}}/>
+                        <div className="card-body">
+                          <h5 className="card-title" style={{fontSize: '15px', color: '#fff'}}>{item.name}</h5>
+                        </div>
+                      </div>
+                    </div>) : null
+                  }
+                </div>
+              </div>
+            </div>
+
+            <div className="row">
+              <div className="col-md-12">
+                {
+                  this.state.data.tracks && <h4>Tracks</h4>
+                }
+              </div>
+            </div>
+            <div className="row">
+              <div className="col-md-12">
+                <div className="d-flex flex-row flex-wrap justify-content-start">
+                  {
+                    this.state.data.tracks ? this.state.data.tracks.items.map((item, id) => <div key={id} style={{ width: 250, height: '20rem'}}>
+                      <div className="card" style={{width: '13rem', height: '18rem', background: '#383a3d'}}>
+                      <img src={item.album.images['1'] ? item.album.images['1'].url : '/dvd.png'} className="card-img-top" alt="..." style={{}}/>
+                        <div className="card-body">
+                          <h5 className="card-title" style={{fontSize: '15px', color: '#fff'}}>{item.name}</h5>
+                        </div>
+                      </div>
+                    </div>
+                    ) : null
+                  }
+                </div>
+              </div>
+            </div>
+
+            <div className="row">
+              <div className="col-md-12">
+                {
+                  this.state.data.playlists && <h4>Playlists</h4>
+                }
+              </div>
+            </div>
+            <div className="row">
+              <div className="col-md-12">
+                <div className="d-flex flex-row flex-wrap justify-content-start">
+                  {
+                    this.state.data.playlists ? this.state.data.playlists.items.map((item, id) => <div key={id} style={{width: 250, height: '20rem' }}>
+
+                      <div className="card" style={{width: '13rem', height: '18rem', background: '#383a3d'}}>
+                        <img src={item.images['0'] ? item.images['0'].url : '/dvd.png'} className="card-img-top" alt="..." style={{}}/>
+                          <div className="card-body">
+                            <h5 className="card-title" style={{fontSize: '15px', color: '#fff'}}>{item.name}</h5>
+                          </div>
+                        </div>
+                      </div>) : null
+                  }
+                </div>
+              </div>
+              </div>
+            </div>
         }
       </div>
     );
