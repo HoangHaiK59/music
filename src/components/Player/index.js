@@ -1,4 +1,5 @@
 import React from 'react';
+import { refreshAccessToken } from '../../helper/token';
 
 class Player extends React.Component {
     constructor(props) {
@@ -8,33 +9,37 @@ class Player extends React.Component {
         };
     }
     getCurrentPlaying = () => {
-        let url = `https://api.spotify.com/v1/me/player`;
+        //let url = `https://api.spotify.com/v1/me/player`;
+        let url = 'http://api.spotify.com/v1/me/player/currently-playing?market=VN'
         let token = localStorage.getItem('token');
-        fetch(url,
+        return fetch(url,
             {
+                method: 'GET',
                 headers: {
                     Authorization: 'Bearer ' + token
                 }
             },
 
         )
-            .then(res => {
-                if (res.status === 204) {
-
-                } else if(res.status === 401) {
-                    this.props.history.push('/')
-                } else {
-                    res.json().then(data => this.setState({ data: data }));
-                }
-            })
     }
 
     componentDidMount() {
-        this.getCurrentPlaying();
+        this.getCurrentPlaying().then(res => {
+            if (res.status === 204) {
+
+            } else if(res.status === 401) {
+                refreshAccessToken()
+                .then(res => res.json().then(resJson => {
+                    localStorage.setItem('token', resJson.access_token);
+                    this.getCurrentPlaying();
+                }))
+            } else {
+                res.json().then(data => this.setState({ data: data }));
+            }
+        })
     }
 
     render() {
-        console.log(this.state.data)
         return (
             <div className="fixed-bottom player-container">
                 <div className="container-fluid position-relative">

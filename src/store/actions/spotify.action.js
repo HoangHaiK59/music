@@ -14,7 +14,7 @@ const SpotifyAuth = () => {
   return dispatch => {
     dispatch(AuthReq());
 
-    fetch('http://localhost:8000/authorize', {mode: 'no-cors'})
+    axiosInstance.get('http://localhost:8000/login')
     .then(
       res => {
         console.log(res);

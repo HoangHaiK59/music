@@ -3,6 +3,7 @@ import "./search.css";
 import { axiosInstance } from "../../helper/axios";
 import hash from '../../helper/hash';
 import { request } from "request";
+import { refreshAccessToken } from "../../helper/token";
 
 
 class Search extends React.Component {
@@ -26,14 +27,23 @@ class Search extends React.Component {
     // this.setState(state => this.setState({toggle: !state.toggle}))
   };
 
-  search(event) {
-
+  search() {
+    let url = `https://api.spotify.com/v1/search?q=${this.state.query}&market=VN&type=album,artist,playlist,track`
+    return fetch(url,
+      {
+        headers: {
+          Authorization: 'Bearer ' + this.state.token
+        }
+      },
+    )
   }
 
   componentDidMount() {
     let token = hash.access_token;
-    if (token) {
+    let refresh_token = hash.refresh_token;
+    if (token && refresh_token) {
       localStorage.setItem('token', token);
+      localStorage.setItem('refresh_token', refresh_token);
       this.setState({ token: token })
     }
 
@@ -53,24 +63,21 @@ class Search extends React.Component {
   componentDidUpdate(prevProps, prevState) {
 
     if ((prevState.query !== this.state.query && this.state.query !== '')) {
-      let url = `https://api.spotify.com/v1/search?q=${this.state.query}&market=VN&type=album,artist,playlist,track`
-      fetch(url,
-        {
-          headers: {
-            Authorization: 'Bearer ' + this.state.token
+      this.search()
+      .then(res => {
+        if(res.json().then(data => {
+          if(data.error) {
+            refreshAccessToken()
+            .then(res => res.json().then(resJson => {
+              localStorage.setItem('token', resJson.access_token);
+              this.setState({token: resJson.access_token});
+              this.search();
+            }))
+          }else {
+            this.setState({data: data})
           }
-        },
-
-      )
-        .then(res => {
-          if(res.json().then(data => {
-            if(data.error) {
-              this.props.history.push('/');
-            }else {
-              this.setState({data: data})
-            }
-          }));
-        })
+        }));
+      })
     }
 
   }
