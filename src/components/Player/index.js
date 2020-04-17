@@ -209,6 +209,7 @@ class Player extends React.Component {
         if(this.state.isRefresh) {
             this.getCurrentPlaying().then(res => {
                     res.json().then(data => {
+                        if(!data.error) {
                         this.getAudioTrack(data.item.id, localStorage.getItem('token'))
                         .then(resP => resP.json().then(dataRes => {
                             this.getPlaylists()
@@ -220,7 +221,7 @@ class Player extends React.Component {
                                 }
                             })
                         }))
-                        
+                    }
                     });
             })
         }
