@@ -3,7 +3,8 @@ import { SpotifyConstants } from "../constants";
 const initState = {
   user: {},
   authticate: false,
-  error: {}
+  error: {},
+  isRefresh: false
 };
 
 export const SpotifyReducer = (state = initState, action) => {
@@ -14,6 +15,8 @@ export const SpotifyReducer = (state = initState, action) => {
       return { ...state, authticate: true, user: action.user };
     case SpotifyConstants.AUTH_FAIL:
       return { ...state, error: action.error };
+    case SpotifyConstants.REFRESH_TOKEN:
+      return {...state, isRefresh: !state.isRefresh};
     default:
       return state;
   }

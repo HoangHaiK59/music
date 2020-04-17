@@ -4,6 +4,9 @@ import { axiosInstance } from "../../helper/axios";
 import hash from '../../helper/hash';
 import { request } from "request";
 import { refreshAccessToken } from "../../helper/token";
+import { SpotifyConstants } from "../../store/constants";
+import { connect } from "react-redux";
+import { Link } from "react-router-dom";
 
 
 class Search extends React.Component {
@@ -13,7 +16,8 @@ class Search extends React.Component {
     this.state = {
       query: "",
       token: '',
-      data: null
+      data: null,
+      isRefresh: false
     };
     this.handleChange = this.handleChange.bind(this);
     this.handleClick = this.handleClick.bind(this);
@@ -28,11 +32,12 @@ class Search extends React.Component {
   };
 
   search() {
+    let token = localStorage.getItem('token');
     let url = `https://api.spotify.com/v1/search?q=${this.state.query}&market=VN&type=album,artist,playlist,track`
     return fetch(url,
       {
         headers: {
-          Authorization: 'Bearer ' + this.state.token
+          Authorization: 'Bearer ' + token
         }
       },
     )
@@ -44,6 +49,7 @@ class Search extends React.Component {
     if (token && refresh_token) {
       localStorage.setItem('token', token);
       localStorage.setItem('refresh_token', refresh_token);
+      window.location.hash="";
       this.setState({ token: token })
     }
 
@@ -62,19 +68,20 @@ class Search extends React.Component {
 
   componentDidUpdate(prevProps, prevState) {
 
-    if ((prevState.query !== this.state.query && this.state.query !== '')) {
+    if ((prevState.query !== this.state.query && this.state.query !== '') || this.state.isRefresh) {
       this.search()
       .then(res => {
         if(res.json().then(data => {
-          if(data.error) {
+          if(data.error ) {
             refreshAccessToken()
             .then(res => res.json().then(resJson => {
               localStorage.setItem('token', resJson.access_token);
-              this.setState({token: resJson.access_token});
-              this.search();
+              this.props.setRefreshAction();
+              this.setState({token: resJson.access_token, isRefresh: true});
+             
             }))
           }else {
-            this.setState({data: data})
+            this.setState({data: data, isRefresh: false})
           }
         }));
       })
@@ -194,7 +201,7 @@ class Search extends React.Component {
                       <div className="card" style={{width: '13rem', height: '18rem', background: '#383a3d'}}>
                         <img src={item.images['0'] ? item.images['0'].url : '/dvd.png'} className="card-img-top" alt="..." style={{}}/>
                           <div className="card-body">
-                            <h5 className="card-title" style={{fontSize: '15px', color: '#fff'}}>{item.name}</h5>
+                            <Link to={`/playlists/${item.id}`} className="card-title" style={{fontSize: '15px', color: '#fff'}}>{item.name}</Link>
                           </div>
                         </div>
                       </div>) : null
@@ -209,4 +216,18 @@ class Search extends React.Component {
   }
 }
 
-export default Search;
+const mapStateToProps = (state, ownProps) => {
+  return {
+    isRefresh: state.spotify.isRefresh
+  }
+}
+
+const mapDispatchToProps = (dispatch, ownProps) => {
+  return {
+    setRefreshAction: () => {
+      dispatch({type: SpotifyConstants.REFRESH_TOKEN})
+    }
+  }
+}
+
+export default connect(mapStateToProps, mapDispatchToProps)(Search);

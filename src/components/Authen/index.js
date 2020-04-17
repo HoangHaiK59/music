@@ -24,10 +24,10 @@ class Authen extends React.Component {
   render() {
     return (
       <div className="container-fluid position-relative" style={{ minHeight: '100vh' }}>
-        <div style={{ position: 'absolute', color: '#fff', top: '30%', width: '100%', height: '10%', left: '48%' }}>
+        <div style={{ position: 'absolute', color: '#fff', top: '30%', width: '50%', height: '10%', left: '48%' }}>
           <h3>Welcome</h3>
         </div>
-        <div style={{ position: 'absolute', top: '40%', width: '100%', height: '50%', left: '45%' }}>
+        <div style={{ position: 'absolute', top: '40%', width: '50%', height: '50%', left: '45%' }}>
           <a
             className="btn btn-green btn-lg"
             href="http://localhost:8000/login"
