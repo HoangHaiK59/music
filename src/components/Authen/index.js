@@ -1,7 +1,8 @@
 import React from "react";
 import { connect } from "react-redux";
 import { SpotifyAction } from "../../store/actions/spotify.action";
-import { scopes } from '../../config';
+import { scopes, SpotifyConfig } from '../../config';
+import queryString from 'querystring';
 class Authen extends React.Component {
   constructor(props) {
     super(props);
@@ -20,6 +21,16 @@ class Authen extends React.Component {
     // .then(res => res.json().then(data => console.log(data)))
     this.props.authen()
   };
+
+  componentDidMount() {
+    // window.open('https://accounts.spotify.com/authorize?' + queryString.stringify({
+    //   client_id: SpotifyConfig.client_id,
+    //   response_type: 'token',
+    //   redirect_uri: 'http://localhost:3000/home',
+    //   scope: scopes.join('%20'),
+    //   show_dialog: true 
+    // }), '_parent',"width=600, height=500")
+  }
 
   render() {
     return (

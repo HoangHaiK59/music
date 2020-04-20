@@ -6,20 +6,11 @@ import { Repeat } from 'react-feather';
 import { SpotifyConstants } from '../../store/constants';
 import { connect } from 'react-redux';
 import './player.css';
-import ScriptCache from '../../model/cache';
 
 let connectToPlayerTimeout;
 class Player extends React.Component {
     constructor(props) {
         super(props);
-
-        new ScriptCache([
-            {
-                name: "https://sdk.scdn.co/spotify-player.js",
-                callback: this.spotifySDKCallback
-            }]);
-
-        window.addEventListener("storage", this.authorizeSpotifyFromStorage);
 
         this.state = {
             data: null,
@@ -27,203 +18,182 @@ class Player extends React.Component {
             track: null,
             playlists: null,
             isRefresh: false,
-            onplayhead: false,
-            isPlaying: false,
-            loadingState: 'loading scripts',
-            spotifyPlayer: undefined,
-            spotifyDeviceId: '',
-            spotifyPlayerReady: false
+            token: localStorage.getItem('token'),
+            deviceId: "",
+            loggedIn: false,
+            error: "",
+            trackName: "Track Name",
+            artistName: "Artist Name",
+            albumName: "Album Name",
+            playing: false,
+            position: 0,
+            duration: 1,
+
         };
-        
-    }
-    getCurrentPlaying = () => {
-        //let url = `https://api.spotify.com/v1/me/player`;
-        let url = 'https://api.spotify.com/v1/me/player'
-        let token = localStorage.getItem('token');
-        return fetch(url,
-            {
-                method: 'GET',
-                headers: {
-                    Authorization: 'Bearer ' + token
-                }
-            },
 
-        )
+        this.playerCheckInterval = setInterval(() => this.checkForPlayer(), 1000);
+
     }
 
-    getAudioTrack = (id, token) => {
-        let url = `https://api.spotify.com/v1/audio-features/${id}`;
-        return fetch(url,
-            {
-                method: 'GET',
-                headers: {
-                    Authorization: 'Bearer ' + token
-                }
-            },
 
-        )
-    }
-
-    spotifySDKCallback () {
-        window.onSpotifyWebPlaybackSDKReady = () => {
-            const {Player} = window.Spotify;
-            const spotifyPlayer = Player({
-                name: 'Spotify Player',
-                getOAuthToken: cb => {
-                    cb(localStorage.getItem('token'))
-                }
-            })
-
-            // Playback status updates
-            spotifyPlayer.addListener('player_state_changed', state => {
-                console.log(state);
-            });
-
+    onStateChanged(state) {
+        // only update if we got a real state
+        if (state !== null) {
+            const {
+                current_track: currentTrack
+            } = state.track_window;
+            console.log(state.track_window)
+            const trackName = currentTrack.name;
+            const albumName = currentTrack.album.name;
+            const duration =  currentTrack.duration_ms;
+            const id = currentTrack.id;
+            const artistName = currentTrack.artists
+                .map(artist => artist.name)
+                .join(", ");
+            const playing = !state.paused;
             this.setState({
-                loadingState: "spotify scripts loaded",
-                spotifyPlayer
+                id,
+                duration,
+                trackName,
+                albumName,
+                artistName,
+                playing
             });
-        }
-    }
-
-    authorizeSpotifyFromStorage(event) {
-        this.connectToPlayer();
-    }
-
-    connectToPlayer = () => {
-        if(this.state.spotifyPlayer) {
-            clearTimeout(connectToPlayerTimeout);
-
-            // ready
-            this.state.spotifyPlayer.addListener('ready', ({device_id}) => {
-                console.log('Ready with Device ID', device_id);
-
-                this.setState({
-                    loadingState: "spotify player ready",
-                    spotifyDeviceId: device_id,
-                    spotifyPlayerReady: true
-                });
-            });
-
-            // not ready
-            this.state.spotifyPlayer.addListener('not_ready', ({device_id}) => {
-                console.log('Device ID has gone offline', device_id);
-            });
-
-            this.state.spotifyPlayer.connect()
-            .then((ev) => {
-                this.setState({loadingState: "connected to player"});
-            });
-
         } else {
-            connectToPlayerTimeout = setTimeout(this.connectToPlayer.bind(this), 1000);
+            // state was null, user might have swapped to another device
+            this.setState({ error: "Looks like you might have swapped to another device?" });
         }
     }
 
-    pausePlayback = () => {
-        let url = `https://api.spotify.com/v1/me/player/pause`;
-        let token = localStorage.getItem('token');
-        fetch(url,
-            {
-                method: 'PUT',
-                headers: {
-                    Authorization: 'Bearer ' + token
-                }
-            },
+    createEventHandlers() {
+        // problem setting up the player
+        this.player.on('initialization_error', e => { console.error(e); });
+        // problem authenticating the user.
+        // either the token was invalid in the first place,
+        // or it expired (it lasts one hour)
+        this.player.on('authentication_error', e => {
+            console.error(e);
+            refreshAccessToken().then(res => res.json().then(resJSON => {
+                localStorage.setItem('token', resJSON.access_token);
+                this.setState({token: resJSON.access_token});
+                this.playerCheckInterval = setInterval(() => this.checkForPlayer(), 1000);
+            }))
+            this.setState({ loggedIn: false });
+        });
+        // currently only premium accounts can use the API
+        this.player.on('account_error', e => { console.error(e); });
+        // loading/playing the track failed for some reason
+        this.player.on('playback_error', e => { console.error(e); });
 
-        )
-        .then(res => {
-            if(res.status === 200) {
-                this.setState({isPlaying: false})
-            }
-        })
+        // Playback status updates
+        this.player.on('player_state_changed', state => this.onStateChanged(state));
+
+        // Ready
+        this.player.on('ready', async data => {
+            let { device_id } = data;
+            console.log("Let the music play on!");
+            // set the deviceId variable, then let's try
+            // to swap music playback to *our* player!
+            await this.setState({ deviceId: device_id });
+            this.transferPlaybackHere();
+        });
     }
 
-    startPlayback = () => {
-        let url = `https://api.spotify.com/v1/me/player/pause`;
-        let token = localStorage.getItem('token');
-        fetch(url,
-            {
-                method: 'PUT',
-                headers: {
-                    Authorization: 'Bearer ' + token
-                }
-            },
+    checkForPlayer() {
+        const { token } = this.state;
 
-        )
-        .then(res => {
-            if(res.status === 200) {
-                this.setState({isPlaying: false})
-            }
-        })
+        // if the Spotify SDK has loaded
+        if (window.Spotify !== null) {
+            // cancel the interval
+            clearInterval(this.playerCheckInterval);
+            // create a new player
+            this.player = new window.Spotify.Player({
+                name: "Hai's Spotify Player",
+                getOAuthToken: cb => { cb(token); },
+            });
+            // set up the player's event handlers
+            this.createEventHandlers();
+
+            // finally, connect!
+            this.player.connect();
+        }
     }
 
+    onPrevClick() {
+        this.player.previousTrack();
+    }
 
+    onPlayClick() {
+        this.player.togglePlay();
+    }
 
-    getPlaylists() {
-        let url = `https://api.spotify.com/v1/me/playlists`;
-        let token = localStorage.getItem('token');
-        return fetch(url, {
-            method: 'GET',
+    onNextClick() {
+        this.player.nextTrack();
+    }
+
+    transferPlaybackHere() {
+        const { deviceId, token } = this.state;
+        // https://beta.developer.spotify.com/documentation/web-api/reference/player/transfer-a-users-playback/
+        fetch("https://api.spotify.com/v1/me/player", {
+            method: "PUT",
             headers: {
-                Authorization: `Bearer ${token}`
-            }
-        })
-        .then(res => res.json());
+                authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                "device_ids": [deviceId],
+                // true: start playing music if it was paused on the other device
+                // false: paused if paused on other device, start playing music otherwise
+                "play": false,
+            }),
+        });
+    }
+
+    getTrackCurrent = () => {
+        //let url = `https://api.spotify.com/v1/me/player`;
+        let url = `https://api.spotify.com/v1/tracks/${this.state.id}`
+        let token = localStorage.getItem('token');
+        return fetch(url,
+            {
+                method: 'GET',
+                headers: {
+                    Authorization: 'Bearer ' + token
+                }
+            },
+
+        ).then(res => res.json());
     }
 
     componentDidMount() {
 
-        this.getCurrentPlaying().then(res => {
-            if (res.status === 204) {
-
-            } else if(res.status === 401) {
-                refreshAccessToken()
-                .then(res => res.json().then(resJson => {
-                    localStorage.setItem('token', resJson.access_token);
-                    this.setState({isRefresh: true});
-                    //this.getCurrentPlaying();
-                    //this.props.setRefreshAction();
-                }))
-            } else {
-                res.json().then(data => {
-                    this.getAudioTrack(data.item.id, localStorage.getItem('token'))
-                    .then(resP => resP.json().then(dataRes => {
-                        this.getPlaylists()
-                        .then(playlists => {
-                            if(playlists.error) {
-
-                            } else {
-                                this.setState({ data: data,playlists: playlists, isPlaying: data.is_playing, track: dataRes });
-                            }
-                        })
-                    }))
-                    
-                });
-            }
-        })
+        // this.getTrackCurrent().then(data => {
+        //      if (data.error === 401) {
+        //         refreshAccessToken()
+        //             .then(res => res.json().then(resJson => {
+        //                 localStorage.setItem('token', resJson.access_token);
+        //                 this.setState({ isRefresh: true });
+        //                 //this.getCurrentPlaying();
+        //                 //this.props.setRefreshAction();
+        //             }))
+        //     } else {
+        //         this.setState({ track: data });
+        //     }
+        // })
 
     }
 
     componentDidUpdate(prevProps, prevState) {
-        if(this.state.isRefresh) {
-            this.getCurrentPlaying().then(res => {
-                    res.json().then(data => {
-                        if(!data.error) {
-                        this.getAudioTrack(data.item.id, localStorage.getItem('token'))
-                        .then(resP => resP.json().then(dataRes => {
-                            this.getPlaylists()
-                            .then(playlists => {
-                                if(playlists.error) {
-    
-                                } else {
-                                    this.setState({ data: data,playlists: playlists,isRefresh: false, isPlaying: data.is_playing, track: dataRes });
-                                }
-                            })
-                        }))
-                    }
-                    });
-            })
+        if (this.state.isRefresh || prevState.id !== this.state.id) {
+            this.getTrackCurrent().then(data => { 
+                if(data.error) {
+                    refreshAccessToken().then(res => res.json().then(resP => {
+                        localStorage.setItem('token', resP.access_token);
+                        this.setState({isRefresh: true});
+                    }))
+                }
+                this.setState({track: data, isRefresh: false})
+            }
+            )
         }
     }
 
@@ -232,19 +202,19 @@ class Player extends React.Component {
             <div className="fixed-bottom player-container">
                 <div className="container-fluid position-relative">
                     {
-                        (this.state.data && this.state.track) && <div className="row">
+                        (this.state.track) && <div className="row">
                             <div className="col-md-4">
                                 <div className="row">
                                     <div className="col-md-2">
-                                        <img src={this.state.data.item.album.images['2'].url} alt="" />
+                                        <img src={this.state.track.album.images['2'].url} alt="" />
                                     </div>
                                     <div className="col-md-3">
                                         <div className="row">
                                             <div className="col-md-12">
-                                                <p>{this.state.data.item.name}</p>
+                                                <p>{this.state.track.name}</p>
                                             </div>
                                             <div className="col-md-12">
-                                                <p>{this.state.data.item.artists.map((artist) => artist.name).join(',')}</p>
+                                                <p>{this.state.track.artists.map((artist) => artist.name).join(',')}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -255,8 +225,8 @@ class Player extends React.Component {
                                             </div>
                                             <div className="col-md-1">
                                                 {
-                                                    this.state.data.device.type === 'Computer' ? <FontAwesomeIcon icon={faDesktop} color="white" />
-                                                    : <FontAwesomeIcon icon={faMobile} color="white" />
+                                                    // this.state.data.device.type === 'Computer' ? <FontAwesomeIcon icon={faDesktop} color="white" />
+                                                    //     : <FontAwesomeIcon icon={faMobile} color="white" />
                                                 }
                                             </div>
                                         </div>
@@ -274,16 +244,16 @@ class Player extends React.Component {
                                                         <i className="ft-repeat"></i>
                                                     </div>
                                                     <div className="col-md-2">
-                                                        <FontAwesomeIcon icon={faBackward} color="white" />
+                                                        <FontAwesomeIcon icon={faBackward} onClick={() => this.onPrevClick()} color="white" />
                                                     </div>
                                                     <div className="col-md-2">
                                                         {
-                                                            this.state.isPlaying ? <FontAwesomeIcon icon={faPause} onClick={this.startPlayback.bind(this)} color="white" />: 
-                                                            <FontAwesomeIcon icon={faPlay} onClick={this.pausePlayback.bind(this)} color="white"/>
+                                                            this.state.playing ? <FontAwesomeIcon icon={faPause} onClick={() => this.onPlayClick()} color="white" /> :
+                                                                <FontAwesomeIcon icon={faPlay} onClick={() => this.onPlayClick()} color="white" />
                                                         }
                                                     </div>
                                                     <div className="col-md-2">
-                                                        <FontAwesomeIcon icon={faForward} color="white" />
+                                                        <FontAwesomeIcon icon={faForward} onClick={() => this.onNextClick()} color="white" />
                                                     </div>
                                                 </div>
                                             </div>
@@ -297,7 +267,7 @@ class Player extends React.Component {
                                                 <div id="playhead"></div>
                                             </div>
                                         </div>
-                                </div>
+                                    </div>
                                 </div>
                             </div>
                             <div className="col-md-4">
@@ -322,7 +292,7 @@ const mapStateToProps = (state, ownProps) => {
 const mapDispatchToProps = (dispatch, ownProps) => {
     return {
         setRefreshAction: () => {
-            dispatch({type: SpotifyConstants.REFRESH_TOKEN})
+            dispatch({ type: SpotifyConstants.REFRESH_TOKEN })
         }
     }
 }

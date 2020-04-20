@@ -6,6 +6,7 @@ import { Navbar } from '../components/Navbar';
 import Search from '../components/Search';
 import Player from '../components/Player';
 import Playlist from '../components/Playlist';
+import Album from '../components/Album';
 
 export const SpotifyContainer = () => {
     return (
@@ -16,6 +17,7 @@ export const SpotifyContainer = () => {
                 <Route path="/music" render={(props) => <Music {...props} />}/>
                 <Route path="/home" render={(props) => <Search {...props} />}/>
                 <Route exact path="/playlists/:id" render={(props) => <Playlist {...props} />}/>
+                <Route exact path="/album/:id" render={(props) => <Album {...props} />}/>
             </Switch>
         <Route render={(props) => <Player {...props} />}/>
         </div>

@@ -13,7 +13,8 @@ class Playlist extends React.Component {
             data: null,
             items: [],
             isRefresh: false,
-            items_clone: []
+            uris: [],
+            uri_playlist: ''
         }
 
     }
@@ -55,12 +56,6 @@ class Playlist extends React.Component {
         this.setState({items: items})
     }
 
-    prepareState() {
-        if(this.state.items) {
-            this.setState(state => ({items: state.items.map(item => ({...item, isActive: false}))}))
-        }
-    }
-
     toMinutesSecond(duration) {
         const minutes = Math.floor(duration / 60000);
         const second = Math.floor((duration - minutes * 60000) / 1000);
@@ -68,6 +63,22 @@ class Playlist extends React.Component {
           return minutes + ':0' + second;
         }
         return minutes + ':' + second;
+    }
+
+    playPlaylist(uri) {
+      let token = localStorage.getItem('token');
+      const { uris }= this.state;
+      fetch('https://api.spotify.com/v1/me/player/play', {
+          method: 'PUT',
+          headers: {
+              Authorization: `Bearer ${token}`
+          },
+          body: {
+            context_uri: uri,
+            uris: uris,
+
+          }
+      }).then(res => res.json()); 
     }
 
     componentDidMount() {
@@ -79,7 +90,10 @@ class Playlist extends React.Component {
                         this.setState({ isRefresh: true });
                     }))
                 } else {
-                    this.setState({ isRefresh: false, data: data, items: data.tracks.items.map((item) => ({...item, isActive: false})) })
+                    this.setState({ isRefresh: false, data: data, items: data.tracks.items.map((item) => ({...item, isActive: false})), 
+                    uris:  data.tracks.items.map(item => item.track.uri),
+                    uri_playlist: data.uri
+                })
                 }
             });
 
@@ -90,7 +104,9 @@ class Playlist extends React.Component {
         if (this.state.isRefresh) {
             this.getPlaylist()
                 .then(data => {
-                    this.setState({ data: data, isRefresh: false, items: data.tracks.items.map(item => ({...item, isActive: false})) })
+                    this.setState({ data: data, isRefresh: false, items: data.tracks.items.map(item => ({...item, isActive: false})),
+                    uris:  data.tracks.items.map(item => item.track.uri),
+                    uri_playlist: data.uri })
                 })
         }
 
@@ -117,6 +133,9 @@ class Playlist extends React.Component {
                                             {
                                                 this.state.data.name 
                                             }
+                                        </div>
+                                        <div className="col-md-12 text-center">
+                                            <button onClick={() => this.playPlaylist(this.state.uri_playlist)} className="btn-md btn-green">Play</button>
                                         </div>
                                         <div className="col-md-12 text-center text-white" style={{fontWeight: 'bold'}}>
                                         {
@@ -160,7 +179,7 @@ class Playlist extends React.Component {
                                                             }
                                                         </div>
                                                         <div className="col-md-3 text-white">
-                                                            <Link className="text-white" style={{textDecoration: 'none'}} to={`${item.track.album.id}`}>                                                           {
+                                                            <Link className="text-white" style={{textDecoration: 'none'}} to={`/album/${item.track.album.id}`}>                                                           {
                                                                 item.track.album.name
                                                             }</Link>
                                                         </div>
