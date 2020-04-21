@@ -58,6 +58,7 @@ app.get('/login', function(req, res) {
     'user-modify-playback-state',
     'user-read-currently-playing',
     'streaming',
+    'app-remote-control',
     'user-read-email',
     'user-read-private',
     'playlist-read-collaborative',

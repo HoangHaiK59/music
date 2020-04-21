@@ -28,6 +28,8 @@ class Player extends React.Component {
             playing: false,
             position: 0,
             duration: 1,
+            device_info: null,
+            track_uri: ''
 
         };
 
@@ -47,6 +49,8 @@ class Player extends React.Component {
             const albumName = currentTrack.album.name;
             const duration =  currentTrack.duration_ms;
             const id = currentTrack.id;
+            const track_uri = currentTrack.uri;
+            this.props.setTrackUri(track_uri);
             const artistName = currentTrack.artists
                 .map(artist => artist.name)
                 .join(", ");
@@ -57,7 +61,8 @@ class Player extends React.Component {
                 trackName,
                 albumName,
                 artistName,
-                playing
+                playing,
+                track_uri
             });
         } else {
             // state was null, user might have swapped to another device
@@ -133,6 +138,7 @@ class Player extends React.Component {
 
     transferPlaybackHere() {
         const { deviceId, token } = this.state;
+        localStorage.setItem('deviceId', deviceId);
         // https://beta.developer.spotify.com/documentation/web-api/reference/player/transfer-a-users-playback/
         fetch("https://api.spotify.com/v1/me/player", {
             method: "PUT",
@@ -149,15 +155,25 @@ class Player extends React.Component {
         });
     }
 
+    getDeviceInfo() {
+        return fetch(`https://api.spotify.com/v1/me/player/devices`,
+            {
+                method: 'GET',
+                headers: {
+                    Authorization: 'Bearer ' + this.state.token
+                }
+            },
+
+        ).then(res => res.json());
+    }
+
     getTrackCurrent = () => {
-        //let url = `https://api.spotify.com/v1/me/player`;
         let url = `https://api.spotify.com/v1/tracks/${this.state.id}`
-        let token = localStorage.getItem('token');
         return fetch(url,
             {
                 method: 'GET',
                 headers: {
-                    Authorization: 'Bearer ' + token
+                    Authorization: 'Bearer ' + this.state.token
                 }
             },
 
@@ -180,20 +196,45 @@ class Player extends React.Component {
         //     }
         // })
 
+        this.getDeviceInfo().then(data => {
+            if(data.error) {
+                refreshAccessToken().then(res => res.json().then(resP => {
+                    localStorage.setItem('token', resP.access_token);
+                    this.setState({token:resP.access_token, isRefresh: true});
+                }))
+            } else {
+                this.setState({device_info: data.devices, isRefresh: false})
+            }
+        })
+
     }
 
     componentDidUpdate(prevProps, prevState) {
-        if (this.state.isRefresh || prevState.id !== this.state.id) {
+        if (this.state.isRefresh || prevState.id !== this.state.id || prevState.token !== this.state.token) {
             this.getTrackCurrent().then(data => { 
                 if(data.error) {
                     refreshAccessToken().then(res => res.json().then(resP => {
                         localStorage.setItem('token', resP.access_token);
-                        this.setState({isRefresh: true});
+                        this.setState({token:resP.access_token, isRefresh: true});
                     }))
                 }
                 this.setState({track: data, isRefresh: false})
             }
             )
+
+            this.getDeviceInfo().then(data => {
+                if(data.error) {
+                    refreshAccessToken().then(res => res.json().then(resP => {
+                        localStorage.setItem('token', resP.access_token);
+                        this.setState({token:resP.access_token, isRefresh: true});
+                    }))
+                } else {
+                    this.setState({device_info: data.devices, isRefresh: false})
+                }
+            })
+
+            if(prevState.token !== this.state.token)
+                this.checkForPlayer();
         }
     }
 
@@ -202,7 +243,7 @@ class Player extends React.Component {
             <div className="fixed-bottom player-container">
                 <div className="container-fluid position-relative">
                     {
-                        (this.state.track) && <div className="row">
+                        (this.state.track && this.state.device_info) && <div className="row">
                             <div className="col-md-4">
                                 <div className="row">
                                     <div className="col-md-2">
@@ -225,8 +266,8 @@ class Player extends React.Component {
                                             </div>
                                             <div className="col-md-1">
                                                 {
-                                                    // this.state.data.device.type === 'Computer' ? <FontAwesomeIcon icon={faDesktop} color="white" />
-                                                    //     : <FontAwesomeIcon icon={faMobile} color="white" />
+                                                     this.state.device_info[0].type === 'Computer' ? <FontAwesomeIcon icon={faDesktop} color="white" />
+                                                         : <FontAwesomeIcon icon={faMobile} color="white" />
                                                 }
                                             </div>
                                         </div>
@@ -293,6 +334,9 @@ const mapDispatchToProps = (dispatch, ownProps) => {
     return {
         setRefreshAction: () => {
             dispatch({ type: SpotifyConstants.REFRESH_TOKEN })
+        },
+        setTrackUri: (uri) => {
+            dispatch({type: SpotifyConstants.CHANGE_TRACK_URI, track_uri: uri})
         }
     }
 }
