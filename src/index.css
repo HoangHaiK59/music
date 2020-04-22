@@ -69,6 +69,15 @@ body, #root {
   line-height: 1;
   padding: 10px 56px 21px;
   min-width: 90px;
+  font-weight: 600;
+}
+
+.btn-md:hover {
+  transform: scale(1.1);
+}
+
+.btn-md:focus {
+  outline: none;
 }
 
 p,h4 {

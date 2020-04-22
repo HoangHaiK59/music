@@ -5,9 +5,9 @@ import { faHeart, faDesktop, faMobile, faForward, faBackward, faPlay, faPause, f
 import { Repeat } from 'react-feather';
 import { SpotifyConstants } from '../../store/constants';
 import { connect } from 'react-redux';
+import { Progress } from '../Progress';
 import './player.css';
 
-let connectToPlayerTimeout;
 class Player extends React.Component {
     constructor(props) {
         super(props);
@@ -29,7 +29,8 @@ class Player extends React.Component {
             position: 0,
             duration: 1,
             device_info: null,
-            track_uri: ''
+            track_uri: '',
+            activePlaybackbar: false
 
         };
 
@@ -155,6 +156,29 @@ class Player extends React.Component {
         });
     }
 
+    onMouseMove() {
+        this.setState({activePlaybackbar: true});
+    }
+
+    onMouseLeave() {
+        this.setState({activePlaybackbar: false}); 
+    }
+
+    progressBar() {
+        var duration = this.state.duration;
+        var st = new Date().getTime();
+        var interval = setInterval(function() {
+          var diff = Math.round(new Date().getTime() - st),
+            val = Math.round(diff / duration * 100);
+          val = val > 100 ? 100 : val;
+          document.getElementById("progress").css("width", val + "px");
+          document.getElementById("progress").text(val + "%");
+          if (diff >= duration) {
+            clearInterval(interval);
+          }
+        }, 100);
+    }
+
     getDeviceInfo() {
         return fetch(`https://api.spotify.com/v1/me/player/devices`,
             {
@@ -234,7 +258,7 @@ class Player extends React.Component {
             })
 
             if(prevState.token !== this.state.token)
-                this.checkForPlayer();
+            this.playerCheckInterval = setInterval(() => this.checkForPlayer(), 1000);
         }
     }
 
@@ -243,11 +267,11 @@ class Player extends React.Component {
             <div className="fixed-bottom player-container">
                 <div className="container-fluid position-relative">
                     {
-                        (this.state.track && this.state.device_info) && <div className="row">
+                        (this.state.track && this.state.track.album && this.state.device_info) && <div className="row">
                             <div className="col-md-4">
                                 <div className="row">
                                     <div className="col-md-2">
-                                        <img src={this.state.track.album.images['2'].url} alt="" />
+                                        <img src={this.state.track.album !== null ? this.state.track.album.images['2'].url: '/public/dvd.png'} alt="" />
                                     </div>
                                     <div className="col-md-3">
                                         <div className="row">
@@ -301,13 +325,7 @@ class Player extends React.Component {
                                         </div>
                                     </div>
                                     <div className="col-md-12">
-                                        <audio id="music" preload="true">
-                                        </audio>
-                                        <div>
-                                            <div id="timeline">
-                                                <div id="playhead"></div>
-                                            </div>
-                                        </div>
+                                        <Progress duration={this.state.duration}/>
                                     </div>
                                 </div>
                             </div>
