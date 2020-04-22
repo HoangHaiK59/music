@@ -30,7 +30,8 @@ class Player extends React.Component {
             duration: 1,
             device_info: null,
             track_uri: '',
-            activePlaybackbar: false
+            activePlaybackbar: false,
+            isNextorPrev: false
 
         };
 
@@ -127,14 +128,21 @@ class Player extends React.Component {
 
     onPrevClick() {
         this.player.previousTrack();
+        this.setState({isNextorPrev: true})
     }
 
     onPlayClick() {
         this.player.togglePlay();
+        this.setState(state => ({playing: !state.playing}))
     }
 
     onNextClick() {
         this.player.nextTrack();
+        this.setState({isNextorPrev: true})
+    }
+
+    returnDefault() {
+        this.setState({isNextorPrev: false})
     }
 
     transferPlaybackHere() {
@@ -290,8 +298,8 @@ class Player extends React.Component {
                                             </div>
                                             <div className="col-md-1">
                                                 {
-                                                     this.state.device_info[0].type === 'Computer' ? <FontAwesomeIcon icon={faDesktop} color="white" />
-                                                         : <FontAwesomeIcon icon={faMobile} color="white" />
+                                                    // this.state.device_info!==undefined? this.state.device_info['0'].type === 'Computer' ? <FontAwesomeIcon icon={faDesktop} color="white" />
+                                                    //      : <FontAwesomeIcon icon={faMobile} color="white" />: null
                                                 }
                                             </div>
                                         </div>
@@ -325,7 +333,12 @@ class Player extends React.Component {
                                         </div>
                                     </div>
                                     <div className="col-md-12">
-                                        <Progress duration={this.state.duration}/>
+                                        <Progress 
+                                        duration={this.state.duration} 
+                                        playing={this.state.playing}
+                                        isNextorPrev={this.state.isNextorPrev}
+                                        returnDefault={() => this.returnDefault()}
+                                        />
                                     </div>
                                 </div>
                             </div>

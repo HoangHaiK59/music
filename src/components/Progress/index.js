@@ -9,6 +9,7 @@ export class Progress extends React.Component {
             activePlaybackbar: false,
             width: 0,
             remain: 100,
+            count: 0
         }
     }
 
@@ -21,7 +22,7 @@ export class Progress extends React.Component {
     }
 
     componentDidMount() {
-        
+        //this.interval = setInterval(() => this.tick(), 1000)
     }
 
     componentWillUnmount() {
@@ -31,13 +32,30 @@ export class Progress extends React.Component {
     tick() {
         let duration = this.props.duration;
         let percent = (this.state.duration / duration) * 100;
-        this.setState(state => ({duration: state.duration + 1000, width: percent, remain: 100 - percent  }))
+        this.setState(state => ({count: state.count + 1, duration: state.duration + 1000, width: percent, remain: 100 - percent  }))
+    }
+
+    shouldComponentUpdate(nextProps, nextState) {
+        if( nextProps.duration !== this.props.duration || nextProps.playing ) {
+            return true;
+        }
+        return false;
     }
 
     componentDidUpdate(prevProps, prevState) {
-        if(prevProps.duration !== this.props.duration && this.props.duration !== 0) {
-            this.interval = setInterval(() => this.tick(), 1000)
-        }
+            // if(this.props.isNextorPrev) {
+            //     this.setState({duration: 0, width: 0, remain: 100});
+            //     //this.props.returnDefault();
+            //     clearInterval(this.interval)
+            // } 
+
+            if(prevState.duration === this.props.duration) {
+                this.setState({duration: 0, width: 0, remain: 100});
+                clearInterval(this.interval);
+            }
+
+            // if(this.state.count === 0)
+            // this.interval = setInterval(() => this.tick(), 1000)
     }
 
     render() {
