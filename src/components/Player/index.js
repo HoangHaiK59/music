@@ -5,7 +5,7 @@ import { faHeart, faDesktop, faMobile, faForward, faBackward, faPlay, faPause, f
 import { Repeat } from 'react-feather';
 import { SpotifyConstants } from '../../store/constants';
 import { connect } from 'react-redux';
-import { Progress } from '../Progress';
+import  Progress  from '../Progress';
 import './player.css';
 
 class Player extends React.Component {
@@ -31,8 +31,6 @@ class Player extends React.Component {
             device_info: null,
             track_uri: '',
             activePlaybackbar: false,
-            isNextorPrev: false
-
         };
 
         this.playerCheckInterval = setInterval(() => this.checkForPlayer(), 1000);
@@ -83,7 +81,7 @@ class Player extends React.Component {
             refreshAccessToken().then(res => res.json().then(resJSON => {
                 localStorage.setItem('token', resJSON.access_token);
                 this.setState({token: resJSON.access_token});
-                this.playerCheckInterval = setInterval(() => this.checkForPlayer(), 1000);
+               // this.playerCheckInterval = setInterval(() => this.checkForPlayer(), 1000);
             }))
             this.setState({ loggedIn: false });
         });
@@ -128,21 +126,17 @@ class Player extends React.Component {
 
     onPrevClick() {
         this.player.previousTrack();
-        this.setState({isNextorPrev: true})
     }
 
     onPlayClick() {
         this.player.togglePlay();
+        let playing = this.state.playing;
         this.setState(state => ({playing: !state.playing}))
+        this.props.setChangePlaying(!playing);
     }
 
     onNextClick() {
         this.player.nextTrack();
-        this.setState({isNextorPrev: true})
-    }
-
-    returnDefault() {
-        this.setState({isNextorPrev: false})
     }
 
     transferPlaybackHere() {
@@ -170,21 +164,6 @@ class Player extends React.Component {
 
     onMouseLeave() {
         this.setState({activePlaybackbar: false}); 
-    }
-
-    progressBar() {
-        var duration = this.state.duration;
-        var st = new Date().getTime();
-        var interval = setInterval(function() {
-          var diff = Math.round(new Date().getTime() - st),
-            val = Math.round(diff / duration * 100);
-          val = val > 100 ? 100 : val;
-          document.getElementById("progress").css("width", val + "px");
-          document.getElementById("progress").text(val + "%");
-          if (diff >= duration) {
-            clearInterval(interval);
-          }
-        }, 100);
     }
 
     getDeviceInfo() {
@@ -265,8 +244,8 @@ class Player extends React.Component {
                 }
             })
 
-            if(prevState.token !== this.state.token)
-            this.playerCheckInterval = setInterval(() => this.checkForPlayer(), 1000);
+            // if(prevState.token !== this.state.token)
+            // this.playerCheckInterval = setInterval(() => this.checkForPlayer(), 1000);
         }
     }
 
@@ -335,9 +314,7 @@ class Player extends React.Component {
                                     <div className="col-md-12">
                                         <Progress 
                                         duration={this.state.duration} 
-                                        playing={this.state.playing}
-                                        isNextorPrev={this.state.isNextorPrev}
-                                        returnDefault={() => this.returnDefault()}
+                                        id={ this.state.id }
                                         />
                                     </div>
                                 </div>
@@ -357,7 +334,7 @@ class Player extends React.Component {
 
 const mapStateToProps = (state, ownProps) => {
     return {
-        isRefresh: state.spotify.isRefresh
+        //isRefresh: state.spotify.isRefresh
     }
 }
 
@@ -368,6 +345,9 @@ const mapDispatchToProps = (dispatch, ownProps) => {
         },
         setTrackUri: (uri) => {
             dispatch({type: SpotifyConstants.CHANGE_TRACK_URI, track_uri: uri})
+        },
+        setChangePlaying: (playing) => {
+            dispatch({type: SpotifyConstants.CHANGE_PLAYING, playing: playing})
         }
     }
 }

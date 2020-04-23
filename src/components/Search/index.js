@@ -76,7 +76,7 @@ class Search extends React.Component {
             refreshAccessToken()
             .then(res => res.json().then(resJson => {
               localStorage.setItem('token', resJson.access_token);
-              this.props.setRefreshAction();
+              //this.props.setRefreshAction();
               this.setState({token: resJson.access_token, isRefresh: true});
              
             }))
@@ -218,7 +218,7 @@ class Search extends React.Component {
 
 const mapStateToProps = (state, ownProps) => {
   return {
-    isRefresh: state.spotify.isRefresh
+    //isRefresh: state.spotify.isRefresh
   }
 }
 
