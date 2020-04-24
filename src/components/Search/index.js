@@ -15,7 +15,7 @@ class Search extends React.Component {
 
     this.state = {
       query: "",
-      token: '',
+      access_token: '',
       data: null,
       isRefresh: false
     };
@@ -32,25 +32,25 @@ class Search extends React.Component {
   };
 
   search() {
-    let token = localStorage.getItem('token');
     let url = `https://api.spotify.com/v1/search?q=${this.state.query}&market=VN&type=album,artist,playlist,track`
     return fetch(url,
       {
         headers: {
-          Authorization: 'Bearer ' + token
+          Authorization: 'Bearer ' + this.state.access_token
         }
       },
     )
   }
 
   componentDidMount() {
-    let token = hash.access_token;
+    let access_token = hash.access_token;
     let refresh_token = hash.refresh_token;
-    if (token && refresh_token) {
-      localStorage.setItem('token', token);
+    if (access_token && refresh_token) {
+      localStorage.setItem('token', access_token);
+      this.props.setAccessToken(access_token);
       localStorage.setItem('refresh_token', refresh_token);
       window.location.hash="";
-      this.setState({ token: token })
+      this.setState({ access_token: access_token })
     }
 
   }
@@ -226,7 +226,8 @@ const mapDispatchToProps = (dispatch, ownProps) => {
   return {
     setRefreshAction: () => {
       dispatch({type: SpotifyConstants.REFRESH_TOKEN})
-    }
+    },
+    setAccessToken: (access_token) => dispatch({type: SpotifyConstants.CHANGE_ACCESS_TOKEN, access_token: access_token})
   }
 }
 
