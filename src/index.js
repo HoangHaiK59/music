@@ -3,20 +3,26 @@ import ReactDOM from "react-dom";
 import App from "./App";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { Provider } from "react-redux";
-import { rootReducer } from "./store";
 import { createStore, applyMiddleware, compose } from "redux";
 import thunkMiddleware from "redux-thunk";
 import { Router } from "react-router";
 import { history } from "./helper/history";
 import './index.css';
 import 'bootstrap/dist/css/bootstrap.css';
-let middlewares = [];
-if(process.env.NODE_ENV === 'development') {
-  const { logger } = require('redux-logger');
-  middlewares.push(logger);
-}
+import {loadState, saveState} from './persitor';
+import configStore from './store';
+
+const persitedState = loadState(); 
+
 //const store = createStore(rootReducer, applyMiddleware(thunkMiddleware, ...middlewares));
-const store = compose(applyMiddleware(thunkMiddleware, ...middlewares))(createStore)(rootReducer);
+//const store = compose(applyMiddleware(thunkMiddleware, ...middlewares))(createStore)(rootReducer);
+
+const store = configStore(persitedState);
+
+store.subscribe(() => {
+  saveState(store.getState())
+})
+
 const rootElement = document.getElementById("root");
 ReactDOM.render(
   <React.StrictMode>

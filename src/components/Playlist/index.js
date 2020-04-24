@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlayCircle, faHeart, faPauseCircle, faVolumeUp, faClock } from '@fortawesome/free-solid-svg-icons';
 import { Link } from 'react-router-dom';
 import { connect } from 'react-redux';
+import { SpotifyConstants } from '../../store/constants';
 
 class Playlist extends React.Component {
     constructor(props) {
@@ -17,7 +18,8 @@ class Playlist extends React.Component {
             uris: [],
             uri_playlist: '',
             id_played: -1, 
-            token: localStorage.getItem('token')
+            token: localStorage.getItem('token'),
+            next_track: ''
         }
 
     }
@@ -87,7 +89,7 @@ class Playlist extends React.Component {
     }
 
     playTrack(id,uri) {
-        let items;
+        let items, next_track;
         if(this.state.id_played !== -1) {
             items = this.state.items.map((item, index) => {
                 if(index === this.state.id_played) {
@@ -96,6 +98,10 @@ class Playlist extends React.Component {
 
                 if(index === id) {
                     return {...item, isPlaying: true}
+                }
+
+                if(index === id + 1) {
+                    next_track = item.track.uri
                 }
 
                 return item
@@ -107,11 +113,15 @@ class Playlist extends React.Component {
                     return {...item, isPlaying: true}
                 }
 
+                if(index === id + 1) {
+                    next_track = item.track.uri
+                }
+
                 return item
             })
         }
 
-        this.setState({items: items, id_played: id})
+        this.setState({items: items, id_played: id, next_track: next_track});
 
         const deviceId = localStorage.getItem('deviceId');
         fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
@@ -132,6 +142,14 @@ class Playlist extends React.Component {
         //     } else 
         //     this.setState({items: items, id_played: id})
         // }): this.setState({items: items, id_played: id}))
+
+        fetch(`https://api.spotify.com/v1/me/player/queue?uri=${next_track}&device_id=${deviceId}`, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${this.state.token}`,
+                'content-type': 'application/json'
+            }
+        })
     }
 
     pauseTrack(id) {

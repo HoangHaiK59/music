@@ -3,17 +3,15 @@ import './progress.css';
 import { SpotifyConstants } from '../../store/constants';
 import { connect } from 'react-redux';
 let start = 0;
-var save_duration = 0;
 
 class Progress extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            duration: Number(localStorage.getItem('duration')) !== null ? Number(localStorage.getItem('duration')): 0,
+            duration: this.props.position,
             activePlaybackbar: false,
-            width: Number(localStorage.getItem('duration')) !== null ? ((Number(localStorage.getItem('duration'))/ this.props.duration) * 100): 0,
-            remain: Number(localStorage.getItem('duration')) !== null ? (100 - ((Number(localStorage.getItem('duration'))/ this.props.duration) * 100)) : 100,
-            count: 0
+            width: ((this.props.position/ this.props.duration) * 100),
+            remain: (100 - (this.props.position/ this.props.duration) * 100),
         }
     }
 
@@ -41,8 +39,6 @@ class Progress extends React.Component {
         let duration = this.props.duration;
         let percent = (this.state.duration / duration) * 100;
         if(this.props.playing) {
-        save_duration = save_duration + 1000;
-        localStorage.setItem('duration', save_duration);
         this.setState(state => ({ duration: state.duration + 1000, width: percent, remain: 100 - percent  }))
         }
     }
@@ -57,16 +53,14 @@ class Progress extends React.Component {
     }
 
     shouldComponentUpdate(nextProps, nextState) {
-        if( nextProps.playing || nextProps.id !== this.props.id ) {
+        if( nextProps.id !== this.props.id || nextProps.playing  ) {
             return true;
         }
         return false;
     }
 
     componentDidUpdate(prevProps, prevState) {
-            if( this.props.id !== prevProps.id ) {
-                save_duration = 0;
-                localStorage.setItem('duration', save_duration);
+            if( this.props.id !== prevProps.id  ) {
                 this.setState({duration: 0, width: 0, remain: 100});
             } 
             

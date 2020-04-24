@@ -7,6 +7,7 @@ import { SpotifyConstants } from '../../store/constants';
 import { connect } from 'react-redux';
 import  Progress  from '../Progress';
 import './player.css';
+var moment = require('moment');
 
 class Player extends React.Component {
     constructor(props) {
@@ -44,7 +45,7 @@ class Player extends React.Component {
             const {
                 current_track: currentTrack
             } = state.track_window;
-            console.log(state.track_window)
+            console.log(state)
             const trackName = currentTrack.name;
             const albumName = currentTrack.album.name;
             const duration =  currentTrack.duration_ms;
@@ -55,6 +56,7 @@ class Player extends React.Component {
                 .map(artist => artist.name)
                 .join(", ");
             const playing = !state.paused;
+            const position = state.position
             this.setState({
                 id,
                 duration,
@@ -62,7 +64,8 @@ class Player extends React.Component {
                 albumName,
                 artistName,
                 playing,
-                track_uri
+                track_uri, 
+                position
             });
         } else {
             // state was null, user might have swapped to another device
@@ -78,11 +81,11 @@ class Player extends React.Component {
         // or it expired (it lasts one hour)
         this.player.on('authentication_error', e => {
             console.error(e);
-            refreshAccessToken().then(res => res.json().then(resJSON => {
-                localStorage.setItem('token', resJSON.access_token);
-                this.setState({token: resJSON.access_token});
-               // this.playerCheckInterval = setInterval(() => this.checkForPlayer(), 1000);
-            }))
+            // refreshAccessToken().then(res => res.json().then(resJSON => {
+            //     localStorage.setItem('token', resJSON.access_token);
+            //     this.setState({token: resJSON.access_token});
+            //    // this.playerCheckInterval = setInterval(() => this.checkForPlayer(), 1000);
+            // }))
             this.setState({ loggedIn: false });
         });
         // currently only premium accounts can use the API
@@ -126,6 +129,8 @@ class Player extends React.Component {
 
     onPrevClick() {
         this.player.previousTrack();
+        this.setState(({playing: true}));
+        this.props.setChangePlaying(true);
     }
 
     onPlayClick() {
@@ -137,6 +142,8 @@ class Player extends React.Component {
 
     onNextClick() {
         this.player.nextTrack();
+        this.setState(({playing: true}));
+        this.props.setChangePlaying(true);
     }
 
     transferPlaybackHere() {
@@ -250,6 +257,7 @@ class Player extends React.Component {
     }
 
     render() {
+        console.log(moment(new Date().getTime()).add(10, 'm'))
         return (
             <div className="fixed-bottom player-container">
                 <div className="container-fluid position-relative">
@@ -315,6 +323,7 @@ class Player extends React.Component {
                                         <Progress 
                                         duration={this.state.duration} 
                                         id={ this.state.id }
+                                        position = {this.state.position}
                                         />
                                     </div>
                                 </div>
