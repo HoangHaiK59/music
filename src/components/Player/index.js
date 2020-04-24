@@ -18,8 +18,6 @@ class Player extends React.Component {
             id: '',
             track: null,
             playlists: null,
-            isRefresh: false,
-            token: localStorage.getItem('token'),
             deviceId: "",
             loggedIn: false,
             error: "",
@@ -33,9 +31,7 @@ class Player extends React.Component {
             track_uri: '',
             activePlaybackbar: false,
         };
-
         this.playerCheckInterval = setInterval(() => this.checkForPlayer(), 1000);
-
     }
 
 
@@ -108,7 +104,7 @@ class Player extends React.Component {
     }
 
     checkForPlayer() {
-        const { token } = this.state;
+        const { access_token } = this.props;
 
         // if the Spotify SDK has loaded
         if (window.Spotify !== null) {
@@ -117,7 +113,7 @@ class Player extends React.Component {
             // create a new player
             this.player = new window.Spotify.Player({
                 name: "Hai's Spotify Player",
-                getOAuthToken: cb => { cb(token); },
+                getOAuthToken: cb => { cb(access_token); },
             });
             // set up the player's event handlers
             this.createEventHandlers();
@@ -147,13 +143,14 @@ class Player extends React.Component {
     }
 
     transferPlaybackHere() {
-        const { deviceId, token } = this.state;
+        const { deviceId } = this.state;
+        const {access_token} = this.props;
         localStorage.setItem('deviceId', deviceId);
         // https://beta.developer.spotify.com/documentation/web-api/reference/player/transfer-a-users-playback/
         fetch("https://api.spotify.com/v1/me/player", {
             method: "PUT",
             headers: {
-                authorization: `Bearer ${token}`,
+                authorization: `Bearer ${access_token}`,
                 "Content-Type": "application/json",
             },
             body: JSON.stringify({
@@ -178,7 +175,7 @@ class Player extends React.Component {
             {
                 method: 'GET',
                 headers: {
-                    Authorization: 'Bearer ' + this.state.token
+                    Authorization: 'Bearer ' + this.props.access_token
                 }
             },
 
@@ -191,7 +188,7 @@ class Player extends React.Component {
             {
                 method: 'GET',
                 headers: {
-                    Authorization: 'Bearer ' + this.state.token
+                    Authorization: 'Bearer ' + this.props.access_token
                 }
             },
 
@@ -200,64 +197,47 @@ class Player extends React.Component {
 
     componentDidMount() {
 
-        // this.getTrackCurrent().then(data => {
-        //      if (data.error === 401) {
-        //         refreshAccessToken()
-        //             .then(res => res.json().then(resJson => {
-        //                 localStorage.setItem('token', resJson.access_token);
-        //                 this.setState({ isRefresh: true });
-        //                 //this.getCurrentPlaying();
-        //                 //this.props.setRefreshAction();
-        //             }))
-        //     } else {
-        //         this.setState({ track: data });
-        //     }
-        // })
-
         this.getDeviceInfo().then(data => {
             if(data.error) {
                 refreshAccessToken().then(res => res.json().then(resP => {
-                    localStorage.setItem('token', resP.access_token);
-                    this.setState({token:resP.access_token, isRefresh: true});
+                    this.props.setAccessToken(resP.access_token)
                 }))
             } else {
-                this.setState({device_info: data.devices, isRefresh: false})
+                this.setState({device_info: data.devices})
             }
         })
 
     }
 
     componentDidUpdate(prevProps, prevState) {
-        if (this.state.isRefresh || prevState.id !== this.state.id || prevState.token !== this.state.token) {
+        if (prevState.id !== this.state.id || prevProps.access_token !== this.props.access_token ) {
             this.getTrackCurrent().then(data => { 
                 if(data.error) {
                     refreshAccessToken().then(res => res.json().then(resP => {
-                        localStorage.setItem('token', resP.access_token);
-                        this.setState({token:resP.access_token, isRefresh: true});
+                        this.props.setAccessToken(resP.access_token)
                     }))
                 }
-                this.setState({track: data, isRefresh: false})
+                this.setState({track: data})
             }
             )
 
             this.getDeviceInfo().then(data => {
                 if(data.error) {
                     refreshAccessToken().then(res => res.json().then(resP => {
-                        localStorage.setItem('token', resP.access_token);
-                        this.setState({token:resP.access_token, isRefresh: true});
+                        this.props.setAccessToken(resP.access_token)
                     }))
                 } else {
-                    this.setState({device_info: data.devices, isRefresh: false})
+                    this.setState({device_info: data.devices})
                 }
             })
-
-            // if(prevState.token !== this.state.token)
-            // this.playerCheckInterval = setInterval(() => this.checkForPlayer(), 1000);
         }
     }
 
+    componentWillUnmount() {
+        clearInterval(this.playerCheckInterval);
+    }
+
     render() {
-        console.log(moment(new Date().getTime()).add(10, 'm'))
         return (
             <div className="fixed-bottom player-container">
                 <div className="container-fluid position-relative">
@@ -343,7 +323,7 @@ class Player extends React.Component {
 
 const mapStateToProps = (state, ownProps) => {
     return {
-        //isRefresh: state.spotify.isRefresh
+        access_token: state.spotify.access_token
     }
 }
 
@@ -357,7 +337,8 @@ const mapDispatchToProps = (dispatch, ownProps) => {
         },
         setChangePlaying: (playing) => {
             dispatch({type: SpotifyConstants.CHANGE_PLAYING, playing: playing})
-        }
+        },
+        setAccessToken: (access_token) => dispatch({type: SpotifyConstants.CHANGE_ACCESS_TOKEN, access_token: access_token})
     }
 }
 

@@ -14,12 +14,14 @@ export const SpotifyContainer = () => {
         <Route render={(props) => <Navbar isShow={localStorage.getItem('authenticate')? true: false} />}/>
             <Switch>
                 <Route exact path="/" render={(props) => <Authen {...props} />}/>
-                <Route path="/music" render={(props) => <Music {...props} />}/>
-                <Route path="/home" render={(props) => <Search {...props} />}/>
+                <Route path="/home" render={(props) => <Music {...props} />}/>
+                <Route path="/search" render={(props) => <Search {...props} />}/>
                 <Route exact path="/playlists/:id" render={(props) => <Playlist {...props} />}/>
                 <Route exact path="/album/:id" render={(props) => <Album {...props} />}/>
             </Switch>
-        <Route render={(props) => <Player {...props} />}/>
+        {
+            JSON.parse(localStorage.getItem('state')).spotify.access_token !== ''? <Route render={(props) => <Player {...props} />}/>: null 
+        }
         </div>
     )
 }

@@ -1,8 +1,5 @@
 import React from "react";
 import "./search.css";
-import { axiosInstance } from "../../helper/axios";
-import hash from '../../helper/hash';
-import { request } from "request";
 import { refreshAccessToken } from "../../helper/token";
 import { SpotifyConstants } from "../../store/constants";
 import { connect } from "react-redux";
@@ -15,9 +12,7 @@ class Search extends React.Component {
 
     this.state = {
       query: "",
-      access_token: '',
       data: null,
-      isRefresh: false
     };
     this.handleChange = this.handleChange.bind(this);
     this.handleClick = this.handleClick.bind(this);
@@ -36,22 +31,13 @@ class Search extends React.Component {
     return fetch(url,
       {
         headers: {
-          Authorization: 'Bearer ' + this.state.access_token
+          Authorization: 'Bearer ' + this.props.access_token
         }
       },
-    )
+    ).then(res => res.status === 200? res.json(): null)
   }
 
   componentDidMount() {
-    let access_token = hash.access_token;
-    let refresh_token = hash.refresh_token;
-    if (access_token && refresh_token) {
-      localStorage.setItem('token', access_token);
-      this.props.setAccessToken(access_token);
-      localStorage.setItem('refresh_token', refresh_token);
-      window.location.hash="";
-      this.setState({ access_token: access_token })
-    }
 
   }
 
@@ -68,23 +54,19 @@ class Search extends React.Component {
 
   componentDidUpdate(prevProps, prevState) {
 
-    if ((prevState.query !== this.state.query && this.state.query !== '') || this.state.isRefresh) {
+    if ((prevState.query !== this.state.query && this.state.query !== '')) {
       this.search()
-      .then(res => {
-        if(res.json().then(data => {
-          if(data.error ) {
-            refreshAccessToken()
-            .then(res => res.json().then(resJson => {
-              localStorage.setItem('token', resJson.access_token);
-              //this.props.setRefreshAction();
-              this.setState({token: resJson.access_token, isRefresh: true});
-             
-            }))
-          }else {
-            this.setState({data: data, isRefresh: false})
-          }
-        }));
-      })
+      .then(data => {
+        if(data === null) {
+          refreshAccessToken()
+          .then(res => res.json().then(resJson => {
+            this.props.setAccessToken(resJson.access_token)
+          }))
+        } else {
+              this.setState({data: data})
+            }
+        }
+      )
     }
 
   }
@@ -218,7 +200,7 @@ class Search extends React.Component {
 
 const mapStateToProps = (state, ownProps) => {
   return {
-    //isRefresh: state.spotify.isRefresh
+    access_token: state.spotify.access_token
   }
 }
 

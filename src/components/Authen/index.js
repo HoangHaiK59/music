@@ -30,6 +30,8 @@ class Authen extends React.Component {
     //   scope: scopes.join('%20'),
     //   show_dialog: true 
     // }), '_parent',"width=600, height=500")
+    localStorage.removeItem('token');
+    localStorage.removeItem('refresh_token');
   }
 
   render() {

@@ -1,0 +1,14 @@
+
+.intro-container {
+    width: 100%;
+    height: 500px;
+}
+
+.playlists-container {
+    position: absolute;
+    top: 40%;
+    left: 15%;
+    width: auto;
+    min-height: 500px;
+
+}
