@@ -304,6 +304,7 @@ class Player extends React.Component {
                                         duration={this.state.duration} 
                                         id={ this.state.id }
                                         position = {this.state.position}
+                                        context_uri = {this.props.context_uri}
                                         />
                                     </div>
                                 </div>
@@ -323,7 +324,8 @@ class Player extends React.Component {
 
 const mapStateToProps = (state, ownProps) => {
     return {
-        access_token: state.spotify.access_token
+        access_token: state.spotify.access_token,
+        context_uri: state.spotify.context_uri
     }
 }
 

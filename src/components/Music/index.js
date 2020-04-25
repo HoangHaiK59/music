@@ -38,6 +38,12 @@ class Music extends React.Component {
     .then(data => data !== null? this.setState({playlists: data}): refreshAccessToken().then(res => res.json().then(resp => this.props.setAccessToken(resp.access_token))))
   }
 
+  componentDidUpdate(prevProps, prevState) {
+    if(prevProps.access_token !== this.props.access_token)
+    this.getCurrentsUserPlaylists()
+    .then(data => data !== null? this.setState({playlists: data}): refreshAccessToken().then(res => res.json().then(resp => this.props.setAccessToken(resp.access_token))))
+  }
+
   render() {
     return <div className="container-fluid position-relative">
     <div className="intro-container"></div>
@@ -49,7 +55,7 @@ class Music extends React.Component {
                 this.state.playlists.items.map((item, id) => <div className="pd-2 mr-2" key={id}>
                   <div className="d-flex flex-column justify-content-start">
                     <img src={item.images['0'].url} style={{width: 200, height:200}} alt=""/>
-                    <Link to={`/playlist/${item.id}`} title={item.description} className="text-white card-title text-decoration-none">{item.name}</Link>
+                    <Link to={`/playlists/${item.id}`} title={item.description} className="text-white card-title text-decoration-none">{item.name}</Link>
                   </div>
                 </div>)
               }

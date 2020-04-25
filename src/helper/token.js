@@ -13,3 +13,7 @@ export const refreshAccessToken = () => {
         }
     })
 }
+
+let spotify = JSON.parse(localStorage.getItem('state'));
+
+export const isAuthenticate = spotify !== null ? (spotify.access_token !== undefined ? true: false): false;

@@ -52,15 +52,19 @@ class Progress extends React.Component {
         return minutes + ':' + second;
     }
 
+    selectPosition(event) {
+        console.log(event.clientX);
+    }
+
     shouldComponentUpdate(nextProps, nextState) {
-        if( nextProps.id !== this.props.id || nextProps.playing  ) {
+        if( nextProps.id !== this.props.id || nextProps.playing || nextProps.context_uri !== this.props.context_uri  ) {
             return true;
         }
         return false;
     }
 
     componentDidUpdate(prevProps, prevState) {
-            if( this.props.id !== prevProps.id  ) {
+            if( this.props.id !== prevProps.id || prevProps.context_uri !== this.props.context_uri ) {
                 this.setState({duration: 0, width: 0, remain: 100});
             } 
             
@@ -81,8 +85,8 @@ class Progress extends React.Component {
             <div className="playback-bar__progress-time text-white">{this.toMinutesSecond(this.state.duration)}</div>
             <div className="progress-bar">
                 <div className="middle-align progress-bar__bg">
-                    <div className="progress-bar__fg_wrapper">
-                        <div className="progress-bar__fg" style={{transform: `translateX(${'-'+ this.state.remain+'%'}) `}}></div>
+                    <div className="progress-bar__fg_wrapper" onClick={(event) => this.selectPosition(event)}>
+                        <div className="progress-bar__fg"  style={{transform: `translateX(${'-'+ this.state.remain+'%'}) `}}></div>
                     </div>
                     <button className="middle-align progress-bar__slider" style={{left: this.state.width +'%'}}></button>
                 </div> 
@@ -92,8 +96,8 @@ class Progress extends React.Component {
         <div className="playback-bar__progress-time text-white">{this.toMinutesSecond(this.state.duration)}</div>
         <div className="progress-bar">
             <div className="middle-align progress-bar__bg">
-                <div className="progress-bar__fg_wrapper">
-                    <div className="progress-bar__fg" style={{transform: `translateX(${'-'+ this.state.remain+'%'} )`}}></div>
+                <div className="progress-bar__fg_wrapper" onClick={(event) => this.selectPosition(event)}>
+                    <div className="progress-bar__fg"  style={{transform: `translateX(${'-'+ this.state.remain+'%'} )`}}></div>
                 </div>
                 <button className="middle-align progress-bar__slider" style={{left: this.state.width +'%'}}></button>
             </div>

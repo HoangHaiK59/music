@@ -14,11 +14,9 @@ class Playlist extends React.Component {
         this.state = {
             data: null,
             items: [],
-            isRefresh: false,
             uris: [],
             uri_playlist: '',
             id_played: -1, 
-            token: localStorage.getItem('token'),
             next_track: ''
         }
 
@@ -31,7 +29,7 @@ class Playlist extends React.Component {
         return fetch(url, {
             method: 'GET',
             headers: {
-                Authorization: `Bearer ${this.state.token}`
+                Authorization: `Bearer ${this.props.access_token}`
             }
         }).then(res => res.json());
     }
@@ -74,13 +72,15 @@ class Playlist extends React.Component {
       fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
           method: 'PUT',
           headers: {
-              Authorization: `Bearer ${this.state.token}`,
+              Authorization: `Bearer ${this.props.access_token}`,
               'content-type': 'application/json'
           },
           body: JSON.stringify({
             'context_uri': uri        
           })
       })
+
+      this.props.setContextUri(uri);
 
       this.setState(state => ({items: state.items.map((item, id) => {
           if(id === 0) return {...item, isPlaying: true}
@@ -127,7 +127,7 @@ class Playlist extends React.Component {
         fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
             method: 'PUT',
             headers: {
-                Authorization: `Bearer ${this.state.token}`,
+                Authorization: `Bearer ${this.props.access_token}`,
                 'content-type': 'application/json'
             },
             body: JSON.stringify({
@@ -146,7 +146,7 @@ class Playlist extends React.Component {
         fetch(`https://api.spotify.com/v1/me/player/queue?uri=${next_track}&device_id=${deviceId}`, {
             method: 'POST',
             headers: {
-                Authorization: `Bearer ${this.state.token}`,
+                Authorization: `Bearer ${this.props.access_token}`,
                 'content-type': 'application/json'
             }
         })
@@ -168,7 +168,7 @@ class Playlist extends React.Component {
         fetch(`https://api.spotify.com/v1/me/player/pause?device_id=${deviceId}`, {
             method: 'PUT',
             headers: {
-                Authorization: `Bearer ${this.state.token}`,
+                Authorization: `Bearer ${this.props.access_token}`,
                 'content-type': 'application/json'
             }
          })//.then(res => res.json().then(json => {
@@ -187,11 +187,15 @@ class Playlist extends React.Component {
             .then(data => {
                 if (data.error) {
                     refreshAccessToken().then(res => res.json().then(resJson => {
-                        localStorage.setItem('token', resJson.access_token);
-                        this.setState({token:resJson.access_token, isRefresh: true });
+                        this.props.setAccessToken(resJson.access_token);
                     }))
                 } else {
-                    this.setState({ isRefresh: false, data: data, items: data.tracks.items.map((item) => ({...item, isActive: false, isPlaying: false})), 
+                    this.setState({ data: data, items: data.tracks.items.map((item) => {
+                        if(item.track.uri === this.props.track_uri) {
+                            return {...item, isActive: false, isPlaying: true}
+                        }
+                        return {...item, isActive: false, isPlaying: false}
+                    }), 
                     uris:  data.tracks.items.map(item => item.track.uri),
                     uri_playlist: data.uri
                 })
@@ -202,15 +206,28 @@ class Playlist extends React.Component {
     }
 
     componentDidUpdate(prevProps, prevState) {
-        if (this.state.isRefresh) {
+        if(prevProps.access_token !== this.props.access_token) {
             this.getPlaylist()
-                .then(data => {
-                    this.setState({ data: data, isRefresh: false, items: data.tracks.items.map(item => ({...item, isActive: false, isPlaying: false})),
+            .then(data => {
+                    this.setState({ data: data, items: data.tracks.items.map((item) => {
+                        if(item.track.uri === this.props.track_uri) {
+                            return {...item, isActive: false, isPlaying: true}
+                        }
+                        return {...item, isActive: false, isPlaying: false}
+                    }), 
                     uris:  data.tracks.items.map(item => item.track.uri),
-                    uri_playlist: data.uri })
+                    uri_playlist: data.uri
                 })
-        } else if(prevProps.track_uri !== this.props.track_uri) {
+            });
+        }
+         if(prevProps.track_uri !== this.props.track_uri) {
             this.setState(state => ({items: state.items.map((item, id) => {
+                // if(id ===0) {
+                //     if(item.isPlaying === true) {
+                //         return {...item, isPlaying: false}
+                //     }
+                //     return item
+                // }
                 if(item.track.uri === prevProps.track_uri) return {...item, isPlaying: false};
                 else if(item.track.uri === this.props.track_uri) {
                     return {...item, isPlaying: true};
@@ -378,12 +395,15 @@ class Playlist extends React.Component {
 
 const mapStateToProps = (state, ownProps) => {
     return {
-        track_uri: state.spotify.track_uri
+        track_uri: state.spotify.track_uri,
+        access_token: state.spotify.access_token
     }
 }
 
 const mapDispatchToProps = (dispatch, ownProps) => {
     return {
+        setAccessToken: (access_token) => dispatch({type: SpotifyConstants.CHANGE_ACCESS_TOKEN, access_token: access_token}),
+        setContextUri: (context_uri) => dispatch({type: SpotifyConstants.CHANGE_CONTEXT_URI, context_uri: context_uri})
     }
 }
 
