@@ -71,7 +71,8 @@ app.get('/login', function(req, res) {
     'user-read-playback-position',
     'user-read-recently-played',
     'user-follow-read',
-    'user-follow-modify'
+    'user-follow-modify',
+    'user-read-birthdate'
   ]
   res.redirect('https://accounts.spotify.com/authorize?' +
     querystring.stringify({

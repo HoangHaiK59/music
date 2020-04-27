@@ -47,11 +47,15 @@ class Player extends React.Component {
             const duration =  currentTrack.duration_ms;
             const id = currentTrack.id;
             const track_uri = currentTrack.uri;
-            this.props.setTrackUri(track_uri);
+            const linked_from_uri = currentTrack.linked_from_uri;
+            this.props.setTrackUri(track_uri, linked_from_uri);
             const artistName = currentTrack.artists
                 .map(artist => artist.name)
                 .join(", ");
             const playing = !state.paused;
+            if(playing === false) {
+                this.props.setChangePlaying(playing);
+            }
             const position = state.position
             this.setState({
                 id,
@@ -210,7 +214,12 @@ class Player extends React.Component {
     }
 
     componentDidUpdate(prevProps, prevState) {
-        if (prevState.id !== this.state.id || prevProps.access_token !== this.props.access_token ) {
+        if( prevProps.access_token !== this.props.access_token) {
+            //clearInterval(this.playerCheckInterval);
+
+            //this.playerCheckInterval = setInterval(() => this.checkForPlayer(), 1000);
+        }
+        if (prevState.id !== this.state.id ) {
             this.getTrackCurrent().then(data => { 
                 if(data.error) {
                     refreshAccessToken().then(res => res.json().then(resP => {
@@ -334,8 +343,8 @@ const mapDispatchToProps = (dispatch, ownProps) => {
         setRefreshAction: () => {
             dispatch({ type: SpotifyConstants.REFRESH_TOKEN })
         },
-        setTrackUri: (uri) => {
-            dispatch({type: SpotifyConstants.CHANGE_TRACK_URI, track_uri: uri})
+        setTrackUri: (uri, linked_from_uri) => {
+            dispatch({type: SpotifyConstants.CHANGE_TRACK_URI, track_uri: uri, linked_from_uri: linked_from_uri})
         },
         setChangePlaying: (playing) => {
             dispatch({type: SpotifyConstants.CHANGE_PLAYING, playing: playing})

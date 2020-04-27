@@ -39,9 +39,9 @@ class Music extends React.Component {
   }
 
   componentDidUpdate(prevProps, prevState) {
-    if(prevProps.access_token !== this.props.access_token)
-    this.getCurrentsUserPlaylists()
-    .then(data => data !== null? this.setState({playlists: data}): refreshAccessToken().then(res => res.json().then(resp => this.props.setAccessToken(resp.access_token))))
+    // if(prevProps.access_token !== this.props.access_token)
+    // this.getCurrentsUserPlaylists()
+    // .then(data => data !== null? this.setState({playlists: data}): refreshAccessToken().then(res => res.json().then(resp => this.props.setAccessToken(resp.access_token))))
   }
 
   render() {

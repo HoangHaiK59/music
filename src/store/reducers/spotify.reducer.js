@@ -5,6 +5,7 @@ const initState = {
   authticate: false,
   error: {},
   track_uri: '',
+  linked_from_uri: '',
   playing: false,
   access_token: '',
   context_uri: ''
@@ -21,7 +22,7 @@ export const SpotifyReducer = (state = initState, action) => {
     case SpotifyConstants.REFRESH_TOKEN:
       return {...state, isRefresh: !state.isRefresh};
     case SpotifyConstants.CHANGE_TRACK_URI:
-      return {...state, track_uri: action.track_uri}
+      return {...state, track_uri: action.track_uri, linked_from_uri: action.linked_from_uri};
     case SpotifyConstants.CHANGE_PLAYING:
       return {...state, playing: action.playing};
     case SpotifyConstants.CHANGE_ACCESS_TOKEN:

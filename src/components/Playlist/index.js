@@ -82,7 +82,7 @@ class Playlist extends React.Component {
 
       this.props.setContextUri(uri);
 
-      this.setState(state => ({items: state.items.map((item, id) => {
+      this.setState(state => ({id_played:0, items: state.items.map((item, id) => {
           if(id === 0) return {...item, isPlaying: true}
           return {...item, isPlaying: false};
       })}))
@@ -122,6 +122,7 @@ class Playlist extends React.Component {
         }
 
         this.setState({items: items, id_played: id, next_track: next_track});
+        this.props.setPlaying(true);
 
         const deviceId = localStorage.getItem('deviceId');
         fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
@@ -163,6 +164,7 @@ class Playlist extends React.Component {
             })
 
         this.setState({items: items});
+        this.props.setPlaying(false);
 
         const deviceId = localStorage.getItem('deviceId');
         fetch(`https://api.spotify.com/v1/me/player/pause?device_id=${deviceId}`, {
@@ -191,7 +193,7 @@ class Playlist extends React.Component {
                     }))
                 } else {
                     this.setState({ data: data, items: data.tracks.items.map((item) => {
-                        if(item.track.uri === this.props.track_uri) {
+                        if(item.track.uri === this.props.track_uri || item.track.uri === this.props.linked_from_uri) {
                             return {...item, isActive: false, isPlaying: true}
                         }
                         return {...item, isActive: false, isPlaying: false}
@@ -206,20 +208,20 @@ class Playlist extends React.Component {
     }
 
     componentDidUpdate(prevProps, prevState) {
-        if(prevProps.access_token !== this.props.access_token) {
-            this.getPlaylist()
-            .then(data => {
-                    this.setState({ data: data, items: data.tracks.items.map((item) => {
-                        if(item.track.uri === this.props.track_uri) {
-                            return {...item, isActive: false, isPlaying: true}
-                        }
-                        return {...item, isActive: false, isPlaying: false}
-                    }), 
-                    uris:  data.tracks.items.map(item => item.track.uri),
-                    uri_playlist: data.uri
-                })
-            });
-        }
+        // if(prevProps.access_token !== this.props.access_token) {
+        //     this.getPlaylist()
+        //     .then(data => {
+        //             this.setState({ data: data, items: data.tracks.items.map((item) => {
+        //                 if(item.track.uri === this.props.track_uri) {
+        //                     return {...item, isActive: false, isPlaying: true}
+        //                 }
+        //                 return {...item, isActive: false, isPlaying: false}
+        //             }), 
+        //             uris:  data.tracks.items.map(item => item.track.uri),
+        //             uri_playlist: data.uri
+        //         })
+        //     });
+        // }
          if(prevProps.track_uri !== this.props.track_uri) {
             this.setState(state => ({items: state.items.map((item, id) => {
                 // if(id ===0) {
@@ -228,8 +230,8 @@ class Playlist extends React.Component {
                 //     }
                 //     return item
                 // }
-                if(item.track.uri === prevProps.track_uri) return {...item, isPlaying: false};
-                else if(item.track.uri === this.props.track_uri) {
+                if(item.track.uri === prevProps.track_uri || item.track.uri === prevProps.linked_from_uri) return {...item, isPlaying: false};
+                else if(item.track.uri === this.props.track_uri || item.track.uri === this.props.linked_from_uri) {
                     return {...item, isPlaying: true};
                 }
 
@@ -396,6 +398,7 @@ class Playlist extends React.Component {
 const mapStateToProps = (state, ownProps) => {
     return {
         track_uri: state.spotify.track_uri,
+        linked_from_uri: state.spotify.linked_from_uri,
         access_token: state.spotify.access_token
     }
 }
@@ -403,7 +406,8 @@ const mapStateToProps = (state, ownProps) => {
 const mapDispatchToProps = (dispatch, ownProps) => {
     return {
         setAccessToken: (access_token) => dispatch({type: SpotifyConstants.CHANGE_ACCESS_TOKEN, access_token: access_token}),
-        setContextUri: (context_uri) => dispatch({type: SpotifyConstants.CHANGE_CONTEXT_URI, context_uri: context_uri})
+        setContextUri: (context_uri) => dispatch({type: SpotifyConstants.CHANGE_CONTEXT_URI, context_uri: context_uri}),
+        setPlaying: (playing) => dispatch({type: SpotifyConstants.CHANGE_PLAYING, playing: playing})
     }
 }
 

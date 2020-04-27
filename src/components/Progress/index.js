@@ -13,6 +13,9 @@ class Progress extends React.Component {
             width: ((this.props.position/ this.props.duration) * 100),
             remain: (100 - (this.props.position/ this.props.duration) * 100),
         }
+
+        this.timeline = React.createRef();
+        this.handle = React.createRef();
     }
 
     onMouseMove() {
@@ -52,19 +55,51 @@ class Progress extends React.Component {
         return minutes + ':' + second;
     }
 
-    selectPosition(event) {
-        console.log(event.clientX);
+    handlePosition(position) {
+        let timelineWidth = this.timeline.offsetWidth - this.handle.offsetWidth;
+        let handleLeft = position - this.timeline.offsetLeft;
+        console.log('timeline.offsetWidth ',this.timeline.offsetWidth);
+        console.log('timelineWidth ',timelineWidth);
+        console.log('handleLeft ',handleLeft);
+        console.log('timeline.offsetLeft ',this.timeline.offsetLeft);
+        console.log('position ',position);
+        if(handleLeft >= 0 && handleLeft <= timelineWidth) {
+           // this.handle.style.marginLeft = handleLeft + 'px';
+           this.handle.style.transform = 'translateX(-50%)';
+            //this.setState({remain: })
+        }
+        if(handleLeft < 0) {
+            this.handle.style.marginLeft = '0px';
+        }
+        if(handleLeft > timelineWidth) {
+           // this.handle.style.marginLeft = timelineWidth + 'px';
+           this.handle.style.left = '10%';
+        }
     }
 
+    mouseMove(event) {
+        this.handlePosition(event.pageX)
+    }
+
+    mouseUp = (e) => {
+        window.removeEventListener('mousemove', this.mouseMove);
+        window.removeEventListener('mouseup', this.mouseUp);
+    };
+    
+    mouseDown = (e) => {
+        window.addEventListener('mousemove', this.mouseMove);
+        window.addEventListener('mouseup', this.mouseUp);
+    };
+
     shouldComponentUpdate(nextProps, nextState) {
-        if( nextProps.id !== this.props.id || nextProps.playing || nextProps.context_uri !== this.props.context_uri  ) {
+        if( nextProps.id !== this.props.id || nextProps.playing || nextProps.context_uri !== this.props.context_uri || (!nextProps.playing && nextProps.id !== this.props.id) ) {
             return true;
         }
         return false;
     }
 
     componentDidUpdate(prevProps, prevState) {
-            if( this.props.id !== prevProps.id || prevProps.context_uri !== this.props.context_uri ) {
+            if( this.props.id !== prevProps.id || prevProps.context_uri !== this.props.context_uri || (!prevProps.playing && prevProps.id !== this.props.id) ) {
                 this.setState({duration: 0, width: 0, remain: 100});
             } 
             
@@ -85,10 +120,10 @@ class Progress extends React.Component {
             <div className="playback-bar__progress-time text-white">{this.toMinutesSecond(this.state.duration)}</div>
             <div className="progress-bar">
                 <div className="middle-align progress-bar__bg">
-                    <div className="progress-bar__fg_wrapper" onClick={(event) => this.selectPosition(event)}>
+                    <div className="progress-bar__fg_wrapper" id="timeline" ref={timeline => this.timeline = timeline} onClick={(event) => this.mouseMove(event)}>
                         <div className="progress-bar__fg"  style={{transform: `translateX(${'-'+ this.state.remain+'%'}) `}}></div>
                     </div>
-                    <button className="middle-align progress-bar__slider" style={{left: this.state.width +'%'}}></button>
+                    <button id="handle" ref={handle => this.handle = handle} className="middle-align progress-bar__slider" style={{left: this.state.width +'%'}}></button>
                 </div> 
             </div>
             <div className="playback-bar__progress-time text-white">{this.toMinutesSecond(this.props.duration)}</div>
@@ -96,10 +131,10 @@ class Progress extends React.Component {
         <div className="playback-bar__progress-time text-white">{this.toMinutesSecond(this.state.duration)}</div>
         <div className="progress-bar">
             <div className="middle-align progress-bar__bg">
-                <div className="progress-bar__fg_wrapper" onClick={(event) => this.selectPosition(event)}>
-                    <div className="progress-bar__fg"  style={{transform: `translateX(${'-'+ this.state.remain+'%'} )`}}></div>
+                <div className="progress-bar__fg_wrapper" id="timeline" ref={timeline => this.timeline = timeline} onClick={(event) => this.mouseMove(event)}>
+                    <div className="progress-bar__fg" style={{transform: `translateX(${'-'+ this.state.remain+'%'} )`}}></div>
                 </div>
-                <button className="middle-align progress-bar__slider" style={{left: this.state.width +'%'}}></button>
+                <button id="handle" ref={handle => this.handle = handle} className="middle-align progress-bar__slider" style={{left: this.state.width +'%'}}></button>
             </div>
         </div>
         <div className="playback-bar__progress-time text-white">{this.toMinutesSecond(this.props.duration)}</div>
