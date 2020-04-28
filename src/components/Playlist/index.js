@@ -2,10 +2,11 @@ import React from 'react';
 import { refreshAccessToken } from '../../helper/token';
 import './playlist.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlayCircle, faHeart, faPauseCircle, faVolumeUp, faClock } from '@fortawesome/free-solid-svg-icons';
+import { faPlayCircle, faHeart, faPauseCircle, faVolumeUp, faClock, faCalendarAlt } from '@fortawesome/free-solid-svg-icons';
 import { Link } from 'react-router-dom';
 import { connect } from 'react-redux';
 import { SpotifyConstants } from '../../store/constants';
+import moment from 'moment';
 
 class Playlist extends React.Component {
     constructor(props) {
@@ -16,7 +17,7 @@ class Playlist extends React.Component {
             items: [],
             uris: [],
             uri_playlist: '',
-            id_played: -1, 
+            id_played: -1,
             next_track: ''
         }
 
@@ -37,70 +38,72 @@ class Playlist extends React.Component {
     mouseMove(id) {
         const items = this.state.items.map((item, index) => {
             if (id === index) {
-                return {...item, isActive: true}
+                return { ...item, isActive: true }
             }
             return item;
         });
 
 
-        this.setState({items: items})
+        this.setState({ items: items })
     }
 
     mouseLeave(id) {
         const items = this.state.items.map((item, index) => {
             if (id === index) {
-                return {...item, isActive: false}
+                return { ...item, isActive: false }
             }
             return item;
         });
 
 
-        this.setState({items: items})
+        this.setState({ items: items })
     }
 
     toMinutesSecond(duration) {
         const minutes = Math.floor(duration / 60000);
         const second = Math.floor((duration - minutes * 60000) / 1000);
         if (second < 10) {
-          return minutes + ':0' + second;
+            return minutes + ':0' + second;
         }
         return minutes + ':' + second;
     }
 
     playPlaylist(uri) {
-      const deviceId = localStorage.getItem('deviceId');
-      fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
-          method: 'PUT',
-          headers: {
-              Authorization: `Bearer ${this.props.access_token}`,
-              'content-type': 'application/json'
-          },
-          body: JSON.stringify({
-            'context_uri': uri        
-          })
-      })
+        const deviceId = localStorage.getItem('deviceId');
+        fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
+            method: 'PUT',
+            headers: {
+                Authorization: `Bearer ${this.props.access_token}`,
+                'content-type': 'application/json'
+            },
+            body: JSON.stringify({
+                'context_uri': uri
+            })
+        })
 
-      this.props.setContextUri(uri);
+        this.props.setContextUri(uri);
 
-      this.setState(state => ({id_played:0, items: state.items.map((item, id) => {
-          if(id === 0) return {...item, isPlaying: true}
-          return {...item, isPlaying: false};
-      })}))
+        this.setState(state => ({
+            id_played: 0, items: state.items.map((item, id) => {
+                if (id === 0) return { ...item, isPlaying: true }
+                return { ...item, isPlaying: false };
+            })
+        }))
     }
 
-    playTrack(id,uri) {
+    playTrack(id, uri) {
         let items, next_track;
-        if(this.state.id_played !== -1) {
+        if (this.state.id_played !== -1) {
             items = this.state.items.map((item, index) => {
-                if(index === this.state.id_played) {
-                    return {...item, isPlaying: false}
+                if (index === this.state.id_played) {
+                    return { ...item, isPlaying: false }
                 }
 
-                if(index === id) {
-                    return {...item, isPlaying: true}
+                if (index === id) {
+                    return { ...item, isPlaying: true }
                 }
 
-                if(index === id + 1) {
+                if (index === id + 1) {
                     next_track = item.track.uri
                 }
 
@@ -109,11 +112,11 @@ class Playlist extends React.Component {
         } else {
             items = this.state.items.map((item, index) => {
 
-                if(index === id) {
-                    return {...item, isPlaying: true}
+                if (index === id) {
+                    return { ...item, isPlaying: true }
                 }
 
-                if(index === id + 1) {
+                if (index === id + 1) {
                     next_track = item.track.uri
                 }
 
@@ -121,7 +124,7 @@ class Playlist extends React.Component {
             })
         }
 
-        this.setState({items: items, id_played: id, next_track: next_track});
+        this.setState({ items: items, id_played: id, next_track: next_track });
         this.props.setPlaying(true);
 
         const deviceId = localStorage.getItem('deviceId');
@@ -132,7 +135,7 @@ class Playlist extends React.Component {
                 'content-type': 'application/json'
             },
             body: JSON.stringify({
-              'uris': [uri]       
+                'uris': [uri]
             })
         })//.then(res => res !== undefined ? res.json().then(json => {
         //     if(json.status === 401) {
@@ -156,14 +159,14 @@ class Playlist extends React.Component {
     pauseTrack(id) {
         let items = this.state.items.map((item, index) => {
 
-                if(index === id) {
-                    return {...item, isPlaying: false}
-                }
+            if (index === id) {
+                return { ...item, isPlaying: false }
+            }
 
-                return item
-            })
+            return item
+        })
 
-        this.setState({items: items});
+        this.setState({ items: items });
         this.props.setPlaying(false);
 
         const deviceId = localStorage.getItem('deviceId');
@@ -173,7 +176,7 @@ class Playlist extends React.Component {
                 Authorization: `Bearer ${this.props.access_token}`,
                 'content-type': 'application/json'
             }
-         })//.then(res => res.json().then(json => {
+        })//.then(res => res.json().then(json => {
         //     if(json.status === 401) {
         //         refreshAccessToken().then(resP => resP.json().then(jsonP => {
         //             localStorage.setItem('token', jsonP.access_token);
@@ -192,19 +195,20 @@ class Playlist extends React.Component {
                         this.props.setAccessToken(resJson.access_token);
                     }))
                 } else {
-                    this.setState({ data: data, items: data.tracks.items.map((item) => {
-                        if(item.track.uri === this.props.track_uri || item.track.uri === this.props.linked_from_uri) {
-                            return {...item, isActive: false, isPlaying: true}
-                        }
-                        return {...item, isActive: false, isPlaying: false}
-                    }), 
-                    uris:  data.tracks.items.map(item => item.track.uri),
-                    uri_playlist: data.uri
-                })
+                    this.setState({
+                        data: data, items: data.tracks.items.map((item) => {
+                            if (item.track.uri === this.props.track_uri || item.track.uri === this.props.linked_from_uri) {
+                                return { ...item, isActive: false, isPlaying: true }
+                            }
+                            return { ...item, isActive: false, isPlaying: false }
+                        }),
+                        uris: data.tracks.items.map(item => item.track.uri),
+                        uri_playlist: data.uri
+                    })
                 }
             });
 
-        
+
     }
 
     componentDidUpdate(prevProps, prevState) {
@@ -222,21 +226,23 @@ class Playlist extends React.Component {
         //         })
         //     });
         // }
-         if(prevProps.track_uri !== this.props.track_uri) {
-            this.setState(state => ({items: state.items.map((item, id) => {
-                // if(id ===0) {
-                //     if(item.isPlaying === true) {
-                //         return {...item, isPlaying: false}
-                //     }
-                //     return item
-                // }
-                if(item.track.uri === prevProps.track_uri || item.track.uri === prevProps.linked_from_uri) return {...item, isPlaying: false};
-                else if(item.track.uri === this.props.track_uri || item.track.uri === this.props.linked_from_uri) {
-                    return {...item, isPlaying: true};
-                }
+        if (prevProps.track_uri !== this.props.track_uri) {
+            this.setState(state => ({
+                items: state.items.map((item, id) => {
+                    // if(id ===0) {
+                    //     if(item.isPlaying === true) {
+                    //         return {...item, isPlaying: false}
+                    //     }
+                    //     return item
+                    // }
+                    if (item.track.uri === prevProps.track_uri || item.track.uri === prevProps.linked_from_uri) return { ...item, isPlaying: false };
+                    else if (item.track.uri === this.props.track_uri || item.track.uri === this.props.linked_from_uri) {
+                        return { ...item, isPlaying: true };
+                    }
 
-                return item
-            })}))
+                    return item
+                })
+            }))
         }
 
     }
@@ -244,91 +250,101 @@ class Playlist extends React.Component {
     render() {
         return (
             <div className="container-fluid">
+                <div className="row" style={{ height: '50px' }}></div>
                 {
-                    (this.state.data&&this.state.items) && <div className="row">
-                        <div className="col-md-3">
-                            <div className="container-fluid w-100 h-100">
-                                <div className="container-fluid" style={{ width: '100%', height: '60%'}}>
-                                    <div className="row mt-lg-4">
-                                        <div className="col-md-12 col-sm-12 text-center">
-                                            <img src={this.state.data.images[0].url} style={{width: '200px', height: '200px'}} alt=""/>
-                                        </div>
-                                        <div className="col-md-12 col-sm-12 text-center text-white mt-3" style={{fontWeight:'bold'}}>
-                                            {
-                                                this.state.data.type.charAt(0).toUpperCase() + this.state.data.type.slice(1, this.state.data.type.length)
-                                            }
-                                        </div>
-                                        <div className="col-md-12 col-sm-12 mt-2 text-white text-center" style={{fontWeight: 'bold'}}>
-                                            {
-                                                this.state.data.name 
-                                            }
-                                        </div>
-                                        <div className="col-md-12 col-sm-12 text-center mt-2">
-                                            <button onClick={() => this.playPlaylist(this.state.uri_playlist)} className="btn-md btn-green">Play</button>
-                                        </div>
-                                        <div className="col-md-12 col-sm-12 text-center text-white mt-2" style={{fontWeight: 'bold'}}>
-                                        {
-                                            this.state.data.owner.display_name 
-                                        }
+                    (this.state.data && this.state.items) && <div className="row">
+                        <div className="col-md-12">
+                            <div className="container-fluid">
+                                <div className="row">
+                                    <div className="col-md-2 col-sm-3">
+                                        <img src={this.state.data.images[0].url} style={{ width: '200px', height: '200px' }} alt="" />
                                     </div>
+                                    <div className="col-md-2" style={{ marginLeft: '-4%' }}>
+                                        <div className="row" style={{ height: '13%' }}></div>
+                                        <div className="row">
+                                            <div className="col-md-12 col-sm-12 text-white mt-3" >
+                                                {
+                                                    this.state.data.type.toUpperCase()
+                                                }
+                                            </div>
+                                            <div className="col-md-12 col-sm-12 mt-2 text-white" style={{ fontWeight: 'bold' }}>
+                                                <h3>
+                                                    {
+                                                        this.state.data.name
+                                                    }
+                                                </h3>
+                                            </div>
+                                            <div className="col-md-12 col-sm-12 text-white mt-2">
+                                                <p style={{ color: '#686e6a' }}>Created by {
+                                                    this.state.data.owner.display_name
+                                                }
+                                                </p>
+                                            </div>
+                                            <div className="col-md-12 col-sm-12 mt-2">
+                                                <button onClick={() => this.playPlaylist(this.state.uri_playlist)} className="btn-small btn-green">PLAY</button>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <div className="col-md-9">
+                        <div className="col-md-12">
                             <div className="container-fluid">
                                 <div className="row">
                                     <div className="col-md-12" style={{ maxHeight: '900px', overflowY: 'scroll' }}>
                                         <div className="d-flex flex-column justify-content-start">
                                             <div className="track">
-                                                <div className="row" style={{height: '100%', paddingTop: '10px'}}>
-                                                    <div className="col-sm-1 col-xs-1" style={{color: '#8c8382'}}></div>
-                                                    <div className="col-sm-4 col-xs-4" style={{color: '#8c8382'}}>Title</div>
-                                                    <div className="col-sm-3 col-xs-3" style={{color: '#8c8382'}}>Artist</div>
-                                                    <div className="col-sm-3 col-xs-3" style={{color: '#8c8382'}}>Album</div>
-                                                    <div className="col-sm-1 col-xs-1" style={{color: '#8c8382'}}><FontAwesomeIcon icon={faClock} color="white" /></div>
+                                                <div className="row" style={{ height: '100%', paddingTop: '10px' }}>
+                                                    <div className="col-sm-1 col-xs-1" style={{ color: '#8c8382' }}></div>
+                                                    <div className="col-sm-4 col-xs-4" style={{ color: '#8c8382', marginLeft: '-70px' }}>Title</div>
+                                                    <div className="col-sm-2 col-xs-2" style={{ color: '#8c8382' }}>Artist</div>
+                                                    <div className="col-sm-2 col-xs-2" style={{ color: '#8c8382' }}>Album</div>
+                                                    <div className="col-sm-2 col-xs-2" style={{ color: '#8c8382' }}><FontAwesomeIcon icon={faCalendarAlt} /></div>
+                                                    <div className="col-sm-1 col-xs-1" style={{ color: '#8c8382' }}><FontAwesomeIcon icon={faClock}  /></div>
                                                 </div>
                                             </div>
                                         </div>
                                         <div className="d-flex flex-column justify-content-start">
                                             {
-                                                this.state.items.map((item, id) => item.isPlaying ? <div key={id} 
-                                                onMouseMove={() => this.mouseMove(id)}
-                                                onMouseLeave={() => this.mouseLeave(id)}
-                                                className="track active">
-                                                    <div className="row" style={{height: '100%', paddingTop: '10px'}}>
+                                                this.state.items.map((item, id) => item.isPlaying ? <div key={id}
+                                                    onMouseMove={() => this.mouseMove(id)}
+                                                    onMouseLeave={() => this.mouseLeave(id)}
+                                                    className="track active">
+                                                    <div className="row" style={{ height: '100%', paddingTop: '10px' }}>
                                                         {
-                                                            item.isActive? <div className="col-sm-1 col-xs-1">
-                                                            {
-                                                                item.isPlaying ? <FontAwesomeIcon icon={faPauseCircle} onClick={() => this.pauseTrack(id)} color="white" size="2x" />:
-                                                                <FontAwesomeIcon icon={faPlayCircle} onClick={() => this.playTrack(id,item.track.uri)} color="white" size="2x" />
-                                                            }
+                                                            item.isActive ? <div className="col-sm-1 col-xs-1">
+                                                                {
+                                                                    item.isPlaying ? <FontAwesomeIcon icon={faPauseCircle} onClick={() => this.pauseTrack(id)} color="white" size="2x" /> :
+                                                                        <FontAwesomeIcon icon={faPlayCircle} onClick={() => this.playTrack(id, item.track.uri)} color="white" size="2x" />
+                                                                }
                                                             </div>
-                                                            : <div className="col-sm-1 col-xs-1">
-                                                            {
-                                                                item.isPlaying? <FontAwesomeIcon icon={faVolumeUp} color="white"/> : null
-                                                            }
-                                                            </div>   
-                                                        }
-                                                        <div className="col-sm-4 col-xs-4 text-white">
-                                                            <div className="row">
-                                                                <div className="col-sm-1 col-xs-1">
-                                                                    <FontAwesomeIcon icon={faHeart} color="white" size="1x" />
+                                                                : <div className="col-sm-1 col-xs-1">
+                                                                    {
+                                                                        item.isPlaying ? <FontAwesomeIcon icon={faVolumeUp} color="white" /> : null
+                                                                    }
                                                                 </div>
+                                                        }
+                                                        <div className="col-sm-4 col-xs-4 text-white" style={{ marginLeft: '-70px' }}>
+                                                            <div className="row">
                                                                 <div className="col-sm-11 col-xs-11">
                                                                     {item.track.name}
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                        <div className="col-sm-3 col-xs-3 text-white">
+                                                        <div className="col-sm-2 col-xs-2 text-white">
                                                             {
                                                                 item.track.artists[0].name
                                                             }
                                                         </div>
-                                                        <div className="col-sm-3 col-xs-3 text-white">
-                                                            <Link className="text-white" style={{textDecoration: 'none'}} to={`/album/${item.track.album.id}`}>                                                           {
+                                                        <div className="col-sm-2 col-xs-2 text-white">
+                                                            <Link className="text-white" style={{ textDecoration: 'none' }} to={`/album/${item.track.album.id}`}>                                                           {
                                                                 item.track.album.name
                                                             }</Link>
+                                                        </div>
+                                                        <div className="col-sm-2 col-xs-2 text-white">
+                                                            {
+                                                                moment(item.added_at).fromNow()
+                                                            }
                                                         </div>
                                                         <div className="col-sm-1 col-xs-1 text-white">
                                                             {
@@ -336,51 +352,53 @@ class Playlist extends React.Component {
                                                             }
                                                         </div>
                                                     </div>
-                                                    <div className="dropdown-divider" style={{borderColor: '#1a1c1f'}}></div>
-                                                </div>: <div key={id} 
-                                                onMouseMove={() => this.mouseMove(id)}
-                                                onMouseLeave={() => this.mouseLeave(id)}
-                                                className="track">
-                                                    <div className="row" style={{height: '100%', paddingTop: '10px'}}>
-                                                        {
-                                                            item.isActive? <div className="col-sm-1 col-xs-1">
+                                                    <div className="dropdown-divider" style={{ borderColor: '#1a1c1f' }}></div>
+                                                </div> : <div key={id}
+                                                    onMouseMove={() => this.mouseMove(id)}
+                                                    onMouseLeave={() => this.mouseLeave(id)}
+                                                    className="track">
+                                                        <div className="row" style={{ height: '100%', paddingTop: '10px' }}>
                                                             {
-                                                                item.isPlaying ? <FontAwesomeIcon icon={faPauseCircle} onClick={() => this.pauseTrack(id)} color="white" size="2x" />:
-                                                                <FontAwesomeIcon icon={faPlayCircle} onClick={() => this.playTrack(id,item.track.uri)} color="white" size="2x" />
-                                                            }
-                                                            </div>
-                                                            : <div className="col-sm-1 col-xs-1">
-                                                            </div>   
-                                                        }
-                                                        <div className="col-sm-4 col-xs-4 text-white">
-                                                            <div className="row">
-                                                                <div className="col-sm-1 col-xs-1">
-                                                                    <FontAwesomeIcon icon={faHeart} color="white" size="1x" />
+                                                                item.isActive ? <div className="col-sm-1 col-xs-1">
+                                                                    {
+                                                                        item.isPlaying ? <FontAwesomeIcon icon={faPauseCircle} onClick={() => this.pauseTrack(id)} color="white" size="2x" /> :
+                                                                            <FontAwesomeIcon icon={faPlayCircle} onClick={() => this.playTrack(id, item.track.uri)} color="white" size="2x" />
+                                                                    }
                                                                 </div>
-                                                                <div className="col-sm-11 col-xs-11">
-                                                                    {item.track.name}
+                                                                    : <div className="col-sm-1 col-xs-1">
+                                                                    </div>
+                                                            }
+                                                            <div className="col-sm-4 col-xs-4 text-white" style={{ marginLeft: '-70px' }}>
+                                                                <div className="row">
+                                                                    <div className="col-sm-11 col-xs-11">
+                                                                        {item.track.name}
+                                                                    </div>
                                                                 </div>
                                                             </div>
+                                                            <div className="col-sm-2 col-xs-2 text-white">
+                                                                {
+                                                                    item.track.artists[0].name
+                                                                }
+                                                            </div>
+                                                            <div className="col-sm-2 col-xs-2 text-white">
+                                                                <Link className="text-white" style={{ textDecoration: 'none' }} to={`/album/${item.track.album.id}`}>                                                           {
+                                                                    item.track.album.name
+                                                                }</Link>
+                                                            </div>
+                                                            <div className="col-sm-2 col-xs-2 text-white">
+                                                                {
+                                                                    moment(item.added_at).fromNow()
+                                                                }
+                                                            </div>
+                                                            <div className="col-sm-1 col-xs-1 text-white">
+                                                                {
+                                                                    this.toMinutesSecond(item.track.duration_ms)
+                                                                }
+                                                            </div>
                                                         </div>
-                                                        <div className="col-sm-3 col-xs-3 text-white">
-                                                            {
-                                                                item.track.artists[0].name
-                                                            }
-                                                        </div>
-                                                        <div className="col-sm-3 col-xs-3 text-white">
-                                                            <Link className="text-white" style={{textDecoration: 'none'}} to={`/album/${item.track.album.id}`}>                                                           {
-                                                                item.track.album.name
-                                                            }</Link>
-                                                        </div>
-                                                        <div className="col-sm-1 col-xs-1 text-white">
-                                                            {
-                                                                this.toMinutesSecond(item.track.duration_ms)
-                                                            }
-                                                        </div>
+                                                        <div className="dropdown-divider" style={{ borderColor: '#1a1c1f' }}></div>
                                                     </div>
-                                                    <div className="dropdown-divider" style={{borderColor: '#1a1c1f'}}></div>
-                                                </div>
-                                                
+
                                                 )
                                             }
                                         </div>
@@ -405,9 +423,9 @@ const mapStateToProps = (state, ownProps) => {
 
 const mapDispatchToProps = (dispatch, ownProps) => {
     return {
-        setAccessToken: (access_token) => dispatch({type: SpotifyConstants.CHANGE_ACCESS_TOKEN, access_token: access_token}),
-        setContextUri: (context_uri) => dispatch({type: SpotifyConstants.CHANGE_CONTEXT_URI, context_uri: context_uri}),
-        setPlaying: (playing) => dispatch({type: SpotifyConstants.CHANGE_PLAYING, playing: playing})
+        setAccessToken: (access_token) => dispatch({ type: SpotifyConstants.CHANGE_ACCESS_TOKEN, access_token: access_token }),
+        setContextUri: (context_uri) => dispatch({ type: SpotifyConstants.CHANGE_CONTEXT_URI, context_uri: context_uri }),
+        setPlaying: (playing) => dispatch({ type: SpotifyConstants.CHANGE_PLAYING, playing: playing })
     }
 }
 

@@ -31,7 +31,6 @@ class Player extends React.Component {
             track_uri: '',
             activePlaybackbar: false,
         };
-        this.playerCheckInterval = setInterval(() => this.checkForPlayer(), 1000);
     }
 
 
@@ -109,6 +108,7 @@ class Player extends React.Component {
 
     checkForPlayer() {
         const { access_token } = this.props;
+        if(access_token === undefined) return;
 
         // if the Spotify SDK has loaded
         if (window.Spotify !== null) {
@@ -200,7 +200,7 @@ class Player extends React.Component {
     }
 
     componentDidMount() {
-
+        if(this.props.access_token !== undefined) {
         this.getDeviceInfo().then(data => {
             if(data.error) {
                 refreshAccessToken().then(res => res.json().then(resP => {
@@ -210,14 +210,24 @@ class Player extends React.Component {
                 this.setState({device_info: data.devices})
             }
         })
-
+    }
+        this.playerCheckInterval = setInterval(() => this.checkForPlayer(), 1000);
     }
 
     componentDidUpdate(prevProps, prevState) {
         if( prevProps.access_token !== this.props.access_token) {
-            //clearInterval(this.playerCheckInterval);
+            clearInterval(this.playerCheckInterval);
 
-            //this.playerCheckInterval = setInterval(() => this.checkForPlayer(), 1000);
+            this.playerCheckInterval = setInterval(() => this.checkForPlayer(), 1000);
+            this.getDeviceInfo().then(data => {
+                if(data.error) {
+                    refreshAccessToken().then(res => res.json().then(resP => {
+                        this.props.setAccessToken(resP.access_token)
+                    }))
+                } else {
+                    this.setState({device_info: data.devices})
+                }
+            })
         }
         if (prevState.id !== this.state.id ) {
             this.getTrackCurrent().then(data => { 

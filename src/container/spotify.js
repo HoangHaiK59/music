@@ -13,7 +13,7 @@ import Album from '../components/Album';
 export const SpotifyContainer = () => {
     return (
         <div className="spotify-container" style={{backgroundColor: ''}}>
-        <Route render={(props) => <Navbar {...props} isShow={JSON.parse(localStorage.getItem('state')) !== undefined? false: true} />}/>
+        <Route render={(props) => <Navbar {...props} isShow={JSON.parse(localStorage.getItem('state')) !== undefined? true: false} />}/>
             <Switch>
                 <Route exact path="/" render={(props) => <Authen {...props} />}/>
                 <Route path="/home" render={(props) => <Music {...props} />}/>
