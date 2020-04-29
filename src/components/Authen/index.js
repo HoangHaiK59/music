@@ -1,14 +1,12 @@
 import React from "react";
 import { connect } from "react-redux";
-import { SpotifyAction } from "../../store/actions/spotify.action";
-import { scopes, SpotifyConfig } from '../../config';
-import queryString from 'querystring';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faSpotify } from '@fortawesome/free-brands-svg-icons';
+
 class Authen extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      username: "",
-      password: ""
     };
     this.handleClick = this.handleClick.bind(this);
   }
@@ -19,7 +17,7 @@ class Authen extends React.Component {
 
     // })
     // .then(res => res.json().then(data => console.log(data)))
-    this.props.authen()
+    //this.props.authen()
   };
 
   componentDidMount() {
@@ -38,15 +36,16 @@ class Authen extends React.Component {
   render() {
     return (
       <div className="container-fluid position-relative" style={{ minHeight: '100vh' }}>
-        <div style={{ position: 'absolute', color: '#fff', top: '30%', width: '50%', height: '10%', left: '48%' }}>
+        <div style={{ position: 'absolute', color: '#fff', top: '30%', width: '50%', height: '10%', left: '47%' }}>
           <h3>Welcome</h3>
         </div>
         <div style={{ position: 'absolute', top: '40%', width: '50%', height: '50%', left: '45%' }}>
           <a
             className="btn btn-green btn-lg"
             href="http://localhost:8000/login"
+            style={{fontWeight: 'bold'}}
           >
-            LOGIN WITH SPOTIFY
+            <FontAwesomeIcon icon={faSpotify} color=""/> Login Spotify
         </a>
         </div>
       </div>
@@ -59,7 +58,7 @@ const mapState = state => ({
 });
 
 const mapProps = dispatch => ({
-  authen: () => dispatch(SpotifyAction.SpotifyAuth())
+
 });
 
 export default connect(

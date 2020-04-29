@@ -2,23 +2,22 @@ import { SpotifyConstants } from "../constants";
 
 const initState = {
   user: {},
-  authticate: false,
-  error: {},
+  authenticate: false,
   track_uri: '',
   linked_from_uri: '',
   playing: false,
   access_token: '',
-  context_uri: ''
+  context_uri: '',
+  repeat_track: false,
+  position_ms: 0
 };
 
 export const SpotifyReducer = (state = initState, action) => {
   switch (action.type) {
-    case SpotifyConstants.AUTH_REQ:
-      return { ...state, authticate: false };
-    case SpotifyConstants.AUTH_SUC:
-      return { ...state, authticate: true, user: action.user };
-    case SpotifyConstants.AUTH_FAIL:
-      return { ...state, error: action.error };
+    case SpotifyConstants.LOGIN:
+      return { ...state, authenticate: true };
+    case SpotifyConstants.LOGOUT:
+      return { ...state, authenticate: false };
     case SpotifyConstants.REFRESH_TOKEN:
       return {...state, isRefresh: !state.isRefresh};
     case SpotifyConstants.CHANGE_TRACK_URI:
@@ -26,9 +25,13 @@ export const SpotifyReducer = (state = initState, action) => {
     case SpotifyConstants.CHANGE_PLAYING:
       return {...state, playing: action.playing};
     case SpotifyConstants.CHANGE_ACCESS_TOKEN:
-      return {...state, access_token: action.access_token};
+      return {...state, access_token: action.access_token, authenticate: true};
     case SpotifyConstants.CHANGE_CONTEXT_URI:
-      return {...state, context_uri: action.context_uri}
+      return {...state, context_uri: action.context_uri};
+    case SpotifyConstants.REPEAT_TRACK:
+      return {...state, repeat_track: action.repeat_track};
+    case SpotifyConstants.POSITION_MS:
+      return {...state, position_ms: action.position_ms};
     default:
       return state;
   }

@@ -109,7 +109,7 @@ class Search extends React.Component {
                       <div className="card" style={{width: '13rem', height: '18rem', background: '#383a3d'}}>
                       <img src={item.images['1'] ? item.images['1'].url : '/dvd.png'} className="card-img-top" alt="..." style={{}}/>
                         <div className="card-body">
-                          <h5 className="card-title" style={{fontSize: '15px', color: '#fff'}}>{item.name}</h5>
+                          <Link to={`/album/${item.id}`} className="card-title" style={{fontSize: '15px', color: '#fff', textDecoration: 'none'}}>{item.name}</Link>
                         </div>
                       </div>
                     </div>) : null

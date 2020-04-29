@@ -1,6 +1,6 @@
 import React from 'react';
 import './App.css';
-import { SpotifyContainer } from './container/spotify';
+import SpotifyContainer from './container/spotify';
 
 function App() {
   return (

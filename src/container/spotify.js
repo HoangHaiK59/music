@@ -4,16 +4,18 @@ import PublicRoute from '../route/public';
 import PrivateRoute from '../route/private';
 import Authen from '../components/Authen';
 import Music from '../components/Music';
-import { Navbar } from '../components/Navbar';
+import Navbar from '../components/Navbar';
 import Search from '../components/Search';
 import Player from '../components/Player';
 import Playlist from '../components/Playlist';
 import Album from '../components/Album';
+import { connect } from 'react-redux';
 
-export const SpotifyContainer = () => {
+const SpotifyContainer = (props) => {
+    const {authenticate} = props;
     return (
         <div className="spotify-container" style={{backgroundColor: ''}}>
-        <Route render={(props) => <Navbar {...props} isShow={JSON.parse(localStorage.getItem('state')) !== undefined? true: false} />}/>
+        <Route render={(props) => <Navbar {...props} isShow={authenticate} />}/>
             <Switch>
                 <Route exact path="/" render={(props) => <Authen {...props} />}/>
                 <Route path="/home" render={(props) => <Music {...props} />}/>
@@ -22,8 +24,22 @@ export const SpotifyContainer = () => {
                 <Route exact path="/album/:id" render={(props) => <Album {...props} />}/>
             </Switch>
         {
-            JSON.parse(localStorage.getItem('state')) !== undefined? <Route render={(props) => <Player {...props} />}/>: null 
+           props.authenticate ? <Route render={(props) => <Player {...props} />}/>: null 
         }
         </div>
     )
 }
+
+const mapStateToProps = (state, ownProps) => {
+    return {
+        authenticate: state.spotify.authenticate
+    }
+}
+
+const mapDispatchToProps = (dispatch, ownProps) => {
+    return {
+    
+    }
+}
+
+export default connect(mapStateToProps, mapDispatchToProps)(SpotifyContainer);

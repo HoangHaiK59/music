@@ -92,14 +92,14 @@ class Progress extends React.Component {
     };
 
     shouldComponentUpdate(nextProps, nextState) {
-        if( nextProps.id !== this.props.id || nextProps.playing || nextProps.context_uri !== this.props.context_uri || (!nextProps.playing && nextProps.id !== this.props.id) ) {
+        if( nextProps.repeat_track || nextProps.id !== this.props.id || nextProps.playing || nextProps.context_uri !== this.props.context_uri || (!nextProps.playing && nextProps.id !== this.props.id) ) {
             return true;
         }
         return false;
     }
 
     componentDidUpdate(prevProps, prevState) {
-            if( this.props.id !== prevProps.id || prevProps.context_uri !== this.props.context_uri || (!prevProps.playing && prevProps.id !== this.props.id) ) {
+            if( this.props.repeat_track || this.props.id !== prevProps.id || prevProps.context_uri !== this.props.context_uri || (!prevProps.playing && prevProps.id !== this.props.id) ) {
                 this.setState({duration: 0, width: 0, remain: 100});
             } 
             

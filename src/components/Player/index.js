@@ -41,21 +41,25 @@ class Player extends React.Component {
                 current_track: currentTrack
             } = state.track_window;
             console.log(state)
+            const playing = !state.paused;
+            if(playing === false) {
+                this.props.setChangePlaying(playing);
+            }
             const trackName = currentTrack.name;
             const albumName = currentTrack.album.name;
             const duration =  currentTrack.duration_ms;
             const id = currentTrack.id;
             const track_uri = currentTrack.uri;
             const linked_from_uri = currentTrack.linked_from_uri;
+            if(track_uri === this.props.track_uri || track_uri === this.props.linked_from_uri) {
+                this.props.setRepeat(true);
+            } else this.props.setRepeat(false)
             this.props.setTrackUri(track_uri, linked_from_uri);
             const artistName = currentTrack.artists
                 .map(artist => artist.name)
                 .join(", ");
-            const playing = !state.paused;
-            if(playing === false) {
-                this.props.setChangePlaying(playing);
-            }
-            const position = state.position
+            const position = state.position;
+            this.props.setPosition(position);
             this.setState({
                 id,
                 duration,
@@ -324,6 +328,7 @@ class Player extends React.Component {
                                         id={ this.state.id }
                                         position = {this.state.position}
                                         context_uri = {this.props.context_uri}
+                                        repeat_track = {this.props.repeat_track}
                                         />
                                     </div>
                                 </div>
@@ -344,7 +349,9 @@ class Player extends React.Component {
 const mapStateToProps = (state, ownProps) => {
     return {
         access_token: state.spotify.access_token,
-        context_uri: state.spotify.context_uri
+        context_uri: state.spotify.context_uri,
+        track_uri: state.spotify.track_uri,
+        linked_from_uri: state.spotify.linked_from_uri
     }
 }
 
@@ -359,7 +366,9 @@ const mapDispatchToProps = (dispatch, ownProps) => {
         setChangePlaying: (playing) => {
             dispatch({type: SpotifyConstants.CHANGE_PLAYING, playing: playing})
         },
-        setAccessToken: (access_token) => dispatch({type: SpotifyConstants.CHANGE_ACCESS_TOKEN, access_token: access_token})
+        setAccessToken: (access_token) => dispatch({type: SpotifyConstants.CHANGE_ACCESS_TOKEN, access_token: access_token}),
+        setRepeat: (repeat_track) => dispatch({type: SpotifyConstants.REPEAT_TRACK, repeat_track: repeat_track}),
+        setPosition: position_ms => dispatch({type: SpotifyConstants.POSITION_MS, position_ms: position_ms})
     }
 }
 

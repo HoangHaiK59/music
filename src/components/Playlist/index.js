@@ -18,7 +18,8 @@ class Playlist extends React.Component {
             uris: [],
             uri_playlist: '',
             id_played: -1,
-            next_track: ''
+            next_track: '',
+            state_changed: false
         }
 
     }
@@ -68,6 +69,12 @@ class Playlist extends React.Component {
         return minutes + ':' + second;
     }
 
+    shouldComponentUpdate(nextProps, nextState) {
+        if(nextState !== this.state || nextProps.playing !== this.props.playing || nextProps.track_uri !== this.props.track_uri)
+            return true;
+        return false;
+    }
+
     playPlaylist(uri) {
         const deviceId = localStorage.getItem('deviceId');
         fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
@@ -82,6 +89,7 @@ class Playlist extends React.Component {
         })
 
         this.props.setContextUri(uri);
+        this.props.setPlaying(true);
 
         this.setState(state => ({
             id_played: 0, items: state.items.map((item, id) => {
@@ -92,6 +100,8 @@ class Playlist extends React.Component {
     }
 
     playTrack(id, uri) {
+        this.props.setPlaying(true);
+        const deviceId = localStorage.getItem('deviceId');
         let items, next_track;
         if (this.state.id_played !== -1) {
             items = this.state.items.map((item, index) => {
@@ -104,7 +114,14 @@ class Playlist extends React.Component {
                 }
 
                 if (index === id + 1) {
-                    next_track = item.track.uri
+                    next_track = item.track.uri;
+                    fetch(`https://api.spotify.com/v1/me/player/queue?uri=${next_track}&device_id=${deviceId}`, {
+                        method: 'POST',
+                        headers: {
+                            Authorization: `Bearer ${this.props.access_token}`,
+                            'content-type': 'application/json'
+                        }
+                    })
                 }
 
                 return item
@@ -117,43 +134,46 @@ class Playlist extends React.Component {
                 }
 
                 if (index === id + 1) {
-                    next_track = item.track.uri
+                    next_track = item.track.uri;
+                    fetch(`https://api.spotify.com/v1/me/player/queue?uri=${next_track}&device_id=${deviceId}`, {
+                        method: 'POST',
+                        headers: {
+                            Authorization: `Bearer ${this.props.access_token}`,
+                            'content-type': 'application/json'
+                        }
+                    })
                 }
 
                 return item
             })
         }
 
-        this.setState({ items: items, id_played: id, next_track: next_track });
-        this.props.setPlaying(true);
-
-        const deviceId = localStorage.getItem('deviceId');
-        fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
-            method: 'PUT',
-            headers: {
-                Authorization: `Bearer ${this.props.access_token}`,
-                'content-type': 'application/json'
-            },
-            body: JSON.stringify({
-                'uris': [uri]
+        this.setState({ items: items, id_played: id, next_track: next_track, state_changed: true });
+        if(this.props.track_uri !== uri && this.props.linked_from_uri !== uri) {
+            fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
+                method: 'PUT',
+                headers: {
+                    Authorization: `Bearer ${this.props.access_token}`,
+                    'content-type': 'application/json'
+                },
+                body: JSON.stringify({
+                    'uris': [uri]
+                })
             })
-        })//.then(res => res !== undefined ? res.json().then(json => {
-        //     if(json.status === 401) {
-        //         refreshAccessToken().then(resP => resP.json().then(jsonP => {
-        //             localStorage.setItem('token', jsonP.access_token);
-        //             this.setState({items: items,id_played: id, token: jsonP.access_token})
-        //         }))
-        //     } else 
-        //     this.setState({items: items, id_played: id})
-        // }): this.setState({items: items, id_played: id}))
 
-        fetch(`https://api.spotify.com/v1/me/player/queue?uri=${next_track}&device_id=${deviceId}`, {
-            method: 'POST',
-            headers: {
-                Authorization: `Bearer ${this.props.access_token}`,
-                'content-type': 'application/json'
-            }
-        })
+        } else {
+            fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
+                method: 'PUT',
+                headers: {
+                    Authorization: `Bearer ${this.props.access_token}`,
+                    'content-type': 'application/json'
+                },
+                body: JSON.stringify({
+                    'uris': [uri],
+                    'position_ms': this.props.position_ms
+                })
+            })
+        }
     }
 
     pauseTrack(id) {
@@ -166,7 +186,7 @@ class Playlist extends React.Component {
             return item
         })
 
-        this.setState({ items: items });
+        this.setState({ items: items, state_changed: false });
         this.props.setPlaying(false);
 
         const deviceId = localStorage.getItem('deviceId');
@@ -226,6 +246,9 @@ class Playlist extends React.Component {
         //         })
         //     });
         // }
+        // if(!this.props.playing) {
+
+        // }
         if (prevProps.track_uri !== this.props.track_uri) {
             this.setState(state => ({
                 items: state.items.map((item, id) => {
@@ -259,7 +282,7 @@ class Playlist extends React.Component {
                                     <div className="col-md-2 col-sm-3">
                                         <img src={this.state.data.images[0].url} style={{ width: '200px', height: '200px' }} alt="" />
                                     </div>
-                                    <div className="col-md-2" style={{ marginLeft: '-4%' }}>
+                                    <div className="col-md-10" style={{ marginLeft: '-4%' }}>
                                         <div className="row" style={{ height: '13%' }}></div>
                                         <div className="row">
                                             <div className="col-md-12 col-sm-12 text-white mt-3" >
@@ -281,10 +304,22 @@ class Playlist extends React.Component {
                                                 </p>
                                             </div>
                                             <div className="col-md-12 col-sm-12 mt-2">
-                                                <button onClick={() => this.playPlaylist(this.state.uri_playlist)} className="btn-small btn-green">PLAY</button>
+                                                <div className="row">
+                                                    <div className="col-md-2">
+                                                        <button onClick={() => this.playPlaylist(this.state.uri_playlist)} className="btn-small btn-green">PLAY</button>
+                                                    </div>
+                                                    <div className="col-md-10 text-right" style={{color: '#64676e'}}>
+                                                        Followers
+                                                    </div>
+                                                </div>
+                                                
                                             </div>
                                         </div>
                                     </div>
+                                </div>
+                                <div className="row">
+                                    <div className="col-md-2"></div>
+                                    <div className="col-md-10 text-right" style={{ marginLeft: '-4%', color: '#64676e' }}>{this.state.data.followers.total}</div>
                                 </div>
                             </div>
                         </div>
@@ -293,7 +328,7 @@ class Playlist extends React.Component {
                                 <div className="row">
                                     <div className="col-md-12" style={{ maxHeight: '900px', overflowY: 'scroll' }}>
                                         <div className="d-flex flex-column justify-content-start">
-                                            <div className="track">
+                                            <div className="track-header">
                                                 <div className="row" style={{ height: '100%', paddingTop: '10px' }}>
                                                     <div className="col-sm-1 col-xs-1" style={{ color: '#8c8382' }}></div>
                                                     <div className="col-sm-4 col-xs-4" style={{ color: '#8c8382', marginLeft: '-70px' }}>Title</div>
@@ -314,13 +349,13 @@ class Playlist extends React.Component {
                                                         {
                                                             item.isActive ? <div className="col-sm-1 col-xs-1">
                                                                 {
-                                                                    item.isPlaying ? <FontAwesomeIcon icon={faPauseCircle} onClick={() => this.pauseTrack(id)} color="white" size="2x" /> :
-                                                                        <FontAwesomeIcon icon={faPlayCircle} onClick={() => this.playTrack(id, item.track.uri)} color="white" size="2x" />
+                                                                    ((item.isPlaying && this.props.playing) ) ? <FontAwesomeIcon icon={faPauseCircle} onClick={() => this.pauseTrack(id)} color="white" size="2x" /> :
+                                                                    <FontAwesomeIcon icon={faPlayCircle} onClick={() => this.playTrack(id, item.track.uri)} color="white" size="2x" />
                                                                 }
                                                             </div>
                                                                 : <div className="col-sm-1 col-xs-1">
                                                                     {
-                                                                        item.isPlaying ? <FontAwesomeIcon icon={faVolumeUp} color="white" /> : null
+                                                                        (item.isPlaying && this.props.playing) ? <FontAwesomeIcon icon={faVolumeUp} color="white" /> : null
                                                                     }
                                                                 </div>
                                                         }
@@ -361,8 +396,8 @@ class Playlist extends React.Component {
                                                             {
                                                                 item.isActive ? <div className="col-sm-1 col-xs-1">
                                                                     {
-                                                                        item.isPlaying ? <FontAwesomeIcon icon={faPauseCircle} onClick={() => this.pauseTrack(id)} color="white" size="2x" /> :
-                                                                            <FontAwesomeIcon icon={faPlayCircle} onClick={() => this.playTrack(id, item.track.uri)} color="white" size="2x" />
+                                                                        (item.isPlaying && this.props.playing)? <FontAwesomeIcon icon={faPauseCircle} onClick={() => this.pauseTrack(id)} color="white" size="2x" /> :
+                                                                        <FontAwesomeIcon icon={faPlayCircle} onClick={() => this.playTrack(id, item.track.uri)} color="white" size="2x" />
                                                                     }
                                                                 </div>
                                                                     : <div className="col-sm-1 col-xs-1">
@@ -417,7 +452,9 @@ const mapStateToProps = (state, ownProps) => {
     return {
         track_uri: state.spotify.track_uri,
         linked_from_uri: state.spotify.linked_from_uri,
-        access_token: state.spotify.access_token
+        access_token: state.spotify.access_token, 
+        position_ms: state.spotify.position_ms,
+        playing: state.spotify.playing
     }
 }
 
