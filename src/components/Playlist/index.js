@@ -19,7 +19,8 @@ class Playlist extends React.Component {
             uri_playlist: '',
             id_played: -1,
             next_track: '',
-            state_changed: false
+            state_changed: false,
+            duration_playlist: 0
         }
 
     }
@@ -67,6 +68,12 @@ class Playlist extends React.Component {
             return minutes + ':0' + second;
         }
         return minutes + ':' + second;
+    }
+
+    toHourMinute(duration) {
+        const hour = Math.floor(duration / (60000 * 60));
+        const minutes = Math.floor((duration - hour * 60000 * 60) / 60000);
+        return hour + ' hr ' + minutes + ' min';
     }
 
     shouldComponentUpdate(nextProps, nextState) {
@@ -177,6 +184,7 @@ class Playlist extends React.Component {
     }
 
     pauseTrack(id) {
+        this.props.setPlaying(false);
         let items = this.state.items.map((item, index) => {
 
             if (index === id) {
@@ -187,7 +195,6 @@ class Playlist extends React.Component {
         })
 
         this.setState({ items: items, state_changed: false });
-        this.props.setPlaying(false);
 
         const deviceId = localStorage.getItem('deviceId');
         fetch(`https://api.spotify.com/v1/me/player/pause?device_id=${deviceId}`, {
@@ -223,7 +230,8 @@ class Playlist extends React.Component {
                             return { ...item, isActive: false, isPlaying: false }
                         }),
                         uris: data.tracks.items.map(item => item.track.uri),
-                        uri_playlist: data.uri
+                        uri_playlist: data.uri,
+                        duration_playlist: data.tracks.items.reduce((duration, cur) => duration + cur.track.duration_ms, 0)
                     })
                 }
             });
@@ -300,7 +308,7 @@ class Playlist extends React.Component {
                                             <div className="col-md-12 col-sm-12 text-white mt-2">
                                                 <p style={{ color: '#686e6a' }}>Created by {
                                                     this.state.data.owner.display_name
-                                                }
+                                                } &bull; {this.state.data.tracks.total} songs, {this.toHourMinute(this.state.duration_playlist)}
                                                 </p>
                                             </div>
                                             <div className="col-md-12 col-sm-12 mt-2">

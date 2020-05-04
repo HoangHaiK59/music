@@ -18,7 +18,8 @@ class Album extends React.Component {
             id_played: -1,
             next_track: '',
             uri_album: '',
-            state_changed: false
+            state_changed: false,
+            duration_album: 0
         }
     }
 
@@ -181,7 +182,7 @@ class Album extends React.Component {
     }
 
     shouldComponentUpdate(nextProps, nextState) {
-        if(nextState !== this.state || nextProps.playing !== this.props.playing)
+        if(nextState !== this.state || nextProps.playing !== this.props.playing || nextProps.track_uri !== this.props.track_uri)
             return true;
         return false;
     }
@@ -251,7 +252,9 @@ class Album extends React.Component {
                             return { ...item, isActive: false, isPlaying: true }
                         }
                         return { ...item, isActive: false, isPlaying: false }
-                    }), uri_album: album.uri })
+                    }), uri_album: album.uri,
+                duration_album:  album.tracks.items.reduce((duration, cur) => duration + cur.duration_ms, 0)
+            })
                 }
             })
     }
@@ -281,6 +284,12 @@ class Album extends React.Component {
                 })
             }))
         }
+    }
+
+    toHourMinute(duration) {
+        const hour = Math.floor(duration / (60000 * 60));
+        const minutes = Math.floor((duration - hour * 60000 * 60) / 60000);
+        return hour + ' hr ' + minutes + ' min';
     }
 
     render() {
@@ -313,7 +322,7 @@ class Album extends React.Component {
                                             <div className="col-md-12 col-sm-12 text-white mt-2">
                                                 <p style={{ color: '#686e6a' }}>By {
                                                     this.state.album.artists.map(artist => artist.name).join(',')
-                                                }
+                                                } &bull; {this.state.album.tracks.total} songs, {this.toHourMinute(this.state.duration_album)}
                                                 </p>
                                             </div>
                                             <div className="col-md-12 col-sm-12 mt-2">

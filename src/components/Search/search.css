@@ -8,7 +8,7 @@
   input {
     position: absolute;
     top: 35%;
-    left: 5%;
+    left: 1%;
     width: 30%;
     height: 25%;
     margin: auto;
@@ -34,5 +34,16 @@
     margin: auto;
     border-radius: 500px;
     text-align: center;
+  }
+
+  .item {
+    width: 18rem;
+    margin: 5px;
+    height: auto;
+  }
+
+  .item:hover {
+    background-color: rgb(48, 50, 51) !important;
+    cursor: pointer;
   }
   
