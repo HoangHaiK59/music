@@ -21,13 +21,13 @@ export const SpotifyReducer = (state = initState, action) => {
     case SpotifyConstants.REFRESH_TOKEN:
       return {...state, isRefresh: !state.isRefresh};
     case SpotifyConstants.CHANGE_TRACK_URI:
-      return {...state, track_uri: action.track_uri, linked_from_uri: action.linked_from_uri};
+      return {...state, track_uri: action.track_uri, linked_from_uri: action.linked_from_uri, repeat_track: false};
     case SpotifyConstants.CHANGE_PLAYING:
       return {...state, playing: action.playing};
     case SpotifyConstants.CHANGE_ACCESS_TOKEN:
       return {...state, access_token: action.access_token, authenticate: true};
     case SpotifyConstants.CHANGE_CONTEXT_URI:
-      return {...state, context_uri: action.context_uri};
+      return {...state, context_uri: action.context_uri, playing: action.playing};
     case SpotifyConstants.REPEAT_TRACK:
       return {...state, repeat_track: action.repeat_track};
     case SpotifyConstants.POSITION_MS:

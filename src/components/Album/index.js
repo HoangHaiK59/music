@@ -32,7 +32,7 @@ class Album extends React.Component {
             headers: {
                 Authorization: `Bearer ${this.props.access_token}`
             }
-        }).then(res => res.status !==401? res.json(): {})
+        }).then(res => res.status !== 401 ? res.json() : {})
     }
 
     mouseMove(id) {
@@ -61,7 +61,14 @@ class Album extends React.Component {
 
     playAlbum(uri) {
         const deviceId = localStorage.getItem('deviceId');
-        fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
+        let isUri = false, isLinked = false;
+        for( const item of this.state.items) {
+            if(item.uri === this.props.track_uri) 
+                isUri = true; 
+            if(item.uri === this.props.linked_from_uri) 
+                isLinked = true;
+        }
+        !isUri  ? fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
             method: 'PUT',
             headers: {
                 Authorization: `Bearer ${this.props.access_token}`,
@@ -70,91 +77,49 @@ class Album extends React.Component {
             body: JSON.stringify({
                 'context_uri': uri
             })
+        }): fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
+            method: 'PUT',
+            headers: {
+                Authorization: `Bearer ${this.props.access_token}`,
+                'content-type': 'application/json'
+            },
+            body: JSON.stringify({
+                'context_uri': uri,
+                'offset': {'uri': isLinked ? this.props.linked_from_uri: this.props.track_uri},
+                'position_ms': this.props.position_ms
+            })
         })
 
         this.props.setContextUri(uri);
-        this.props.setPlaying(true);
 
-        this.setState(state => ({
-            id_played: 0, items: state.items.map((item, id) => {
+        !isUri ? this.setState(state => ({
+            state_changed: !state.state_changed,
+            items: state.items.map((item, id) => {
                 if (id === 0) return { ...item, isPlaying: true }
                 return { ...item, isPlaying: false };
             })
-        }))
+        })): this.setState(state => ({ state_changed: !state.state_changed,items: state.items.map((item, id) => {
+            if (item.uri === this.props.track_uri || item.uri === this.props.linked_from_uri) return { ...item, isPlaying: true }
+            return { ...item, isPlaying: false };
+        })}))
     }
 
     playTrack(id, uri) {
         this.props.setPlaying(true);
         const deviceId = localStorage.getItem('deviceId');
-        let items, next_track;
-        if (this.state.id_played !== -1) {
-            if(this.state.items.length > 1) {
-            items = this.state.items.map((item, index) => {
-                if (index === this.state.id_played) {
-                    return { ...item, isPlaying: false }
-                }
+        const items = this.state.items.map((item, index) => {
 
-                if (index === id) {
-                    return { ...item, isPlaying: true }
-                }
-
-                if (index === id + 1) {
-                    next_track = item.track.uri;
-                    fetch(`https://api.spotify.com/v1/me/player/queue?uri=${next_track}&device_id=${deviceId}`, {
-                        method: 'POST',
-                        headers: {
-                            Authorization: `Bearer ${this.props.access_token}`,
-                            'content-type': 'application/json'
-                        }
-                    })
-                }
-
-                return item
-            }) } else {
-                items = this.state.items.map((item, index) => {
-    
-                    if (index === id) {
-                        return { ...item, isPlaying: true }
-                    }
-    
-                    return item
-                })
+            if (index === id) {
+                return { ...item, isPlaying: true }
             }
-        } else {
-            if(this.state.items.length > 0) {
-                items = this.state.items.map((item, index) => {
 
-                    if (index === id) {
-                        return { ...item, isPlaying: true }
-                    }
-    
-                    if (index === id + 1) {
-                        next_track = item.track.uri;
-                        fetch(`https://api.spotify.com/v1/me/player/queue?uri=${next_track}&device_id=${deviceId}`, {
-                            method: 'POST',
-                            headers: {
-                                Authorization: `Bearer ${this.props.access_token}`,
-                                'content-type': 'application/json'
-                            }
-                        })
-                    }
-    
-                    return item
-                })
-            } else {
-                items = this.state.items.map((item, index) => {
-    
-                    if (index === id) {
-                        return { ...item, isPlaying: true }
-                    }
-    
-                    return item
-                })
-            }
-        }
+            return { ...item, isPlaying: false };
+        })
 
-        this.setState({ items: items, id_played: id, next_track: next_track, state_changed: true });
-        if(this.props.track_uri !== uri && this.props.linked_from_uri !== uri) {
+
+
+        this.setState({ items: items, state_changed: true });
+        if (this.props.track_uri !== uri && this.props.linked_from_uri !== uri) {
             fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
                 method: 'PUT',
                 headers: {
@@ -182,33 +147,15 @@ class Album extends React.Component {
     }
 
     shouldComponentUpdate(nextProps, nextState) {
-        if(nextState !== this.state || nextProps.playing !== this.props.playing || nextProps.track_uri !== this.props.track_uri)
+        if (nextState !== this.state || nextProps.playing !== this.props.playing || nextProps.track_uri !== this.props.track_uri)
             return true;
         return false;
     }
 
-    pauseTrack(id) {
-        let items;
-        if(this.state.items.length > 1) {
-        items = this.state.items.map((item, index) => {
+    pauseTrack() {
 
-            if (index === id) {
-                return { ...item, isPlaying: false }
-            }
 
-            return item
-        }) } else {
-            items = this.state.items.map((item, index) => {
-
-            if (index === id) {
-                return { ...item, isPlaying: true }
-            }
-
-            return item
-        })
-    }
-
-        this.setState({ items: items, state_changed: false });
+        this.setState({ state_changed: false });
         this.props.setPlaying(false);
 
         const deviceId = localStorage.getItem('deviceId');
@@ -241,20 +188,21 @@ class Album extends React.Component {
     componentDidMount() {
         this.getAlbum()
             .then(album => {
-                if (album === null ) {
+                if (album === null) {
                     refreshAccessToken().then(res => res.json().then(resJson => {
                         this.props.setAccessToken(resJson.access_token);
                     }))
                 } else {
-                    this.setState({ isRefresh: false, album: album, items: album.tracks.items.map(item => {
-                        //return { ...item, isActive: false, isPlaying: false }
-                        if (item.uri === this.props.track_uri || item.uri === this.props.linked_from_uri) {
-                            return { ...item, isActive: false, isPlaying: true }
-                        }
-                        return { ...item, isActive: false, isPlaying: false }
-                    }), uri_album: album.uri,
-                duration_album:  album.tracks.items.reduce((duration, cur) => duration + cur.duration_ms, 0)
-            })
+                    this.setState({
+                        isRefresh: false, album: album, items: album.tracks.items.map(item => {
+                            //return { ...item, isActive: false, isPlaying: false }
+                            if (item.uri === this.props.track_uri || item.uri === this.props.linked_from_uri) {
+                                return { ...item, isActive: false, isPlaying: true }
+                            }
+                            return { ...item, isActive: false, isPlaying: false }
+                        }), uri_album: album.uri,
+                        duration_album: album.tracks.items.reduce((duration, cur) => duration + cur.duration_ms, 0)
+                    })
                 }
             })
     }
@@ -302,9 +250,9 @@ class Album extends React.Component {
                             <div className="container-fluid">
                                 <div className="row">
                                     <div className="col-md-2 col-sm-3">
-                                        <img src={this.state.album.images ? this.state.album.images[1].url: '/public/dvd.png'} style={{ width: '200px', height: '200px' }} alt="" />
+                                        <img src={this.state.album.images ? this.state.album.images[1].url : '/public/dvd.png'} style={{ width: '200px', height: '200px' }} alt="" />
                                     </div>
-                                    <div className="col-md-4" style={{ marginLeft: '-4%' }}>
+                                    <div className="col-md-6" style={{ marginLeft: '-4%' }}>
                                         <div className="row" style={{ height: '13%' }}></div>
                                         <div className="row">
                                             <div className="col-md-12 col-sm-12 text-white mt-3" >
@@ -326,7 +274,8 @@ class Album extends React.Component {
                                                 </p>
                                             </div>
                                             <div className="col-md-12 col-sm-12 mt-2">
-                                                <button onClick={() => this.playAlbum(this.state.uri_album)} className="btn-small btn-green">PLAY</button>
+                                                {!this.state.state_changed ? <button onClick={() => this.playAlbum(this.state.uri_album)} className="btn-small btn-green">PLAY</button>:
+                                                <button onClick={() => this.pauseTrack()} className="btn-small btn-green">PAUSE</button>}
                                             </div>
                                         </div>
                                     </div>
@@ -357,29 +306,29 @@ class Album extends React.Component {
                                                         {
                                                             item.isActive ? <div className="col-sm-1 col-xs-1">
                                                                 {
-                                                                    (item.isPlaying && this.props.playing )? <FontAwesomeIcon icon={faPauseCircle} onClick={() => this.pauseTrack(id)} color="white" size="2x" /> :
-                                                                        <FontAwesomeIcon icon={faPlayCircle} onClick={() => this.playTrack(id, item.uri)} color="white" size="2x" />
+                                                                    (item.isPlaying && this.props.playing) ? <FontAwesomeIcon icon={faPauseCircle} onClick={() => this.pauseTrack()} color="#c4c4be" size="2x" /> :
+                                                                        <FontAwesomeIcon icon={faPlayCircle} onClick={() => this.playTrack(id, item.uri)} color="#c4c4be" size="2x" />
                                                                 }
                                                             </div>
                                                                 : <div className="col-sm-1 col-xs-1">
                                                                     {
-                                                                        item.isPlaying ? <FontAwesomeIcon icon={faVolumeUp} color="white" /> : null
+                                                                        item.isPlaying ? <FontAwesomeIcon icon={faVolumeUp} color="#c4c4be" /> : null
                                                                     }
                                                                 </div>
                                                         }
-                                                        <div className="col-sm-5 col-xs-5 text-white" style={{ marginLeft: '-70px' }}>
+                                                        <div className="col-sm-5 col-xs-5" style={{ marginLeft: '-70px', color: '#4ca331' }}>
                                                             <div className="row">
                                                                 <div className="col-sm-11 col-xs-11">
                                                                     {item.name}
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                        <div className="col-sm-5 col-xs-5 text-white">
+                                                        <div className="col-sm-5 col-xs-5" style={{ color: '#4ca331' }}>
                                                             {
                                                                 item.artists[0].name
                                                             }
                                                         </div>
-                                                        <div className="col-sm-1 col-xs-1 text-white">
+                                                        <div className="col-sm-1 col-xs-1" style={{ color: '#4ca331' }}>
                                                             {
                                                                 this.toMinutesSecond(item.duration_ms)
                                                             }
@@ -394,26 +343,26 @@ class Album extends React.Component {
                                                             {
                                                                 item.isActive ? <div className="col-sm-1 col-xs-1">
                                                                     {
-                                                                        (item.isPlaying && this.props.playing) ? <FontAwesomeIcon icon={faPauseCircle} onClick={() => this.pauseTrack(id)} color="white" size="2x" /> :
-                                                                            <FontAwesomeIcon icon={faPlayCircle} onClick={() => this.playTrack(id, item.uri)} color="white" size="2x" />
+                                                                        (item.isPlaying && this.props.playing) ? <FontAwesomeIcon icon={faPauseCircle} onClick={() => this.pauseTrack()} color="#c4c4be" size="2x" /> :
+                                                                            <FontAwesomeIcon icon={faPlayCircle} onClick={() => this.playTrack(id, item.uri)} color="#c4c4be" size="2x" />
                                                                     }
                                                                 </div>
                                                                     : <div className="col-sm-1 col-xs-1">
                                                                     </div>
                                                             }
-                                                            <div className="col-sm-5 col-xs-5 text-white" style={{ marginLeft: '-70px' }}>
+                                                            <div className="col-sm-5 col-xs-5" style={{ marginLeft: '-70px' }}>
                                                                 <div className="row">
                                                                     <div className="col-sm-11 col-xs-11">
                                                                         {item.name}
                                                                     </div>
                                                                 </div>
                                                             </div>
-                                                            <div className="col-sm-5 col-xs-5 text-white">
+                                                            <div className="col-sm-5 col-xs-5">
                                                                 {
                                                                     item.artists[0].name
                                                                 }
                                                             </div>
-                                                            <div className="col-sm-1 col-xs-1 text-white">
+                                                            <div className="col-sm-1 col-xs-1">
                                                                 {
                                                                     this.toMinutesSecond(item.duration_ms)
                                                                 }
@@ -448,8 +397,8 @@ const mapStateToProps = (state, ownProps) => {
 
 const mapDispatchToProps = (dispatch, ownProps) => {
     return {
-        setAccessToken: (access_token) => dispatch({type: SpotifyConstants.CHANGE_ACCESS_TOKEN, access_token: access_token}),
-        setContextUri: (context_uri) => dispatch({ type: SpotifyConstants.CHANGE_CONTEXT_URI, context_uri: context_uri }),
+        setAccessToken: (access_token) => dispatch({ type: SpotifyConstants.CHANGE_ACCESS_TOKEN, access_token: access_token }),
+        setContextUri: (context_uri) => dispatch({ type: SpotifyConstants.CHANGE_CONTEXT_URI, context_uri: context_uri, playing: true }),
         setPlaying: (playing) => dispatch({ type: SpotifyConstants.CHANGE_PLAYING, playing: playing }),
     }
 }

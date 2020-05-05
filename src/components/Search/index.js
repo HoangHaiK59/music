@@ -18,7 +18,8 @@ class Search extends React.Component {
       albums: null,
       artists: null,
       tracks: null,
-      playlists: null
+      playlists: null,
+      id_played: -1
     };
     this.handleChange = this.handleChange.bind(this);
     this.handleClick = this.handleClick.bind(this);
@@ -132,6 +133,104 @@ class Search extends React.Component {
     }
   }
 
+  playContext(id, uri, type) {
+    let diff = false;
+    if(type !== 3) {
+      this.props.setContextUri(uri);
+      diff = true;
+    } else {
+      if(uri !== this.props.track_uri && uri !== this.props.linked_from_uri) {
+        this.props.setContextUri();
+        diff = true;
+      }
+    }
+    const deviceId = localStorage.getItem('deviceId');
+    !diff ? fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${this.props.access_token}`,
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify(type !== 3  ? {
+        'context_uri': uri,
+        'position_ms': this.props.position_ms
+      } : {
+          'uris': [uri],
+          'position_ms': this.props.position_ms
+        })
+    }): fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${this.props.access_token}`,
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify(type !== 3  ? {
+        'context_uri': uri,
+      } : {
+          'uris': [uri]
+        })
+    });
+
+    if (type === 1) {
+      const items = this.state.albums.items.map((item, index) => id === index ? ({ ...item, playing: true }) : ({ ...item, playing: false }));
+      this.setState({
+        id_played: id,
+        albums: { ...this.state.albums, items: items },
+        artists: { ...this.state.artists, items: this.state.artists.items.map(item => ({ ...item, playing: false })) },
+        tracks: { ...this.state.tracks, items: this.state.tracks.items.map(item => ({ ...item, playing: false })) },
+        playlists: { ...this.state.playlists, items: this.state.playlists.items.map(item => ({ ...item, playing: false })) }
+      });
+    } else if (type === 2) {
+      const items = this.state.artists.items.map((item, index) => id === index ? ({ ...item, playing: true }) : ({ ...item, playing: false }));
+      this.setState({
+        id_played: id,
+        artists: { ...this.state.artists, items: items },
+        albums: { ...this.state.albums, items: this.state.albums.items.map(item => ({ ...item, playing: false })) },
+        tracks: { ...this.state.tracks, items: this.state.tracks.items.map(item => ({ ...item, playing: false })) },
+        playlists: { ...this.state.playlists, items: this.state.playlists.items.map(item => ({ ...item, playing: false })) }
+      });
+    } else if (type === 3) {
+      const items = this.state.tracks.items.map((item, index) => id === index ? ({ ...item, playing: true }) : ({ ...item, playing: false }));
+      this.setState({
+        id_played: id,
+        tracks: { ...this.state.tracks, items: items },
+        albums: { ...this.state.albums, items: this.state.albums.items.map(item => ({ ...item, playing: false })) },
+        artists: { ...this.state.artists, items: this.state.artists.items.map(item => ({ ...item, playing: false })) },
+        playlists: { ...this.state.playlists, items: this.state.playlists.items.map(item => ({ ...item, playing: false })) }
+      });
+    } else {
+      const items = this.state.playlists.items.map((item, index) => id === index ? ({ ...item, playing: true }) : ({ ...item, playing: false }));
+      this.setState({
+        id_played: id,
+        playlists: { ...this.state.playlists, items: items },
+        albums: { ...this.state.albums, items: this.state.albums.items.map(item => ({ ...item, playing: false })) },
+        artists: { ...this.state.artists, items: this.state.artists.items.map(item => ({ ...item, playing: false })) },
+        tracks: { ...this.state.tracks, items: this.state.tracks.items.map(item => ({ ...item, playing: false })) }
+      });
+    }
+
+  }
+
+  pause() {
+    this.props.setPlaying(false);
+
+    this.setState(state => ({ 
+      albums: { ...this.state.albums, items: this.state.albums.items.map(item => ({ ...item, playing: false })) },
+      artists: { ...this.state.artists, items: this.state.artists.items.map(item => ({ ...item, playing: false })) },
+      tracks: { ...this.state.tracks, items: this.state.tracks.items.map(item => ({ ...item, playing: false })) },
+      playlists: { ...this.state.playlists, items: this.state.playlists.items.map(item => ({ ...item, playing: false })) }
+     }));
+
+    const deviceId = localStorage.getItem('deviceId');
+    fetch(`https://api.spotify.com/v1/me/player/pause?device_id=${deviceId}`, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${this.props.access_token}`,
+        'content-type': 'application/json'
+      }
+    })
+  }
+
   componentDidMount() {
 
   }
@@ -141,10 +240,6 @@ class Search extends React.Component {
     // document
     // .getElementById("query")
     // .removeEventListener("click", this.handleClick);
-  }
-
-  componentWillUpdate() {
-
   }
 
   componentDidUpdate(prevProps, prevState) {
@@ -208,12 +303,17 @@ class Search extends React.Component {
                   {
                     this.state.albums ? this.state.albums.items.map((item, id) => <div key={id} className="item">
 
-                      <div className="row" style={{ width: '18rem', height: '5rem', background: '#0f1424' }}>
+                      <div className="row" style={{ width: '18rem', height: '4.4rem', background: '#0f1424' }}>
                         {item.active ? <div className="col-md-4 position-relative" onMouseMove={() => this.mouseMove(id, 1)} onMouseLeave={() => this.mouseLeave(id, 1)}>
                           <img className="position-absolute" src={item.images['1'] ? item.images['1'].url : '/dvd.png'} alt="..." style={{ width: 64, height: 64, zIndex: 1 }} />
-                          <div className="position-absolute" style={{top:'25%',left: '30%',zIndex: 2}}><FontAwesomeIcon icon={faPlayCircle} size="2x" color="white"/></div>
-                        </div> : <div className="col-md-4" onMouseMove={() => this.mouseMove(id, 1)} onMouseLeave={() => this.mouseLeave(id, 1)}>
-                            <img src={item.images['1'] ? item.images['1'].url : '/dvd.png'} alt="..." style={{ width: 64, height: 64 }} />
+                          {
+                            item.playing ?
+                              <div className="position-absolute" style={{ top: '25%', left: '30%', zIndex: 2 }}><FontAwesomeIcon onClick={() => this.pause()} icon={faPauseCircle} size="2x" color="white" /></div> :
+                              <div className="position-absolute" style={{ top: '25%', left: '30%', zIndex: 2 }}><FontAwesomeIcon onClick={() => this.playContext(id, item.uri, 1)} icon={faPlayCircle} size="2x" color="white" /></div>
+                          }
+                        </div> : <div className="col-md-4 position-relative" onMouseMove={() => this.mouseMove(id, 1)} onMouseLeave={() => this.mouseLeave(id, 1)}>
+                            <img className="position-absolute" src={item.images['1'] ? item.images['1'].url : '/dvd.png'} alt="..." style={{ width: 64, height: 64, zIndex: 1 }} />
+                            {item.playing && <div className="position-absolute" style={{ top: '25%', left: '30%', zIndex: 2 }}><FontAwesomeIcon icon={faVolumeUp} size="2x" color="white" /></div>}
                           </div>}
                         <div className="col-md-8">
                           <div className="row">
@@ -245,10 +345,19 @@ class Search extends React.Component {
                 <div className="d-flex flex-row flex-wrap justify-content-start">
                   {
                     this.state.artists ? this.state.artists.items.map((item, id) => <div key={id} className="item">
-                      <div className="row" style={{ width: '18rem', height: '5rem', background: '#0f1424' }}>
-                        <div className="col-md-4">
-                          <img className="rounded-circle" src={item.images['1'] ? item.images['1'].url : '/user.png'} alt="..." style={{ width: 64, height: 64 }} />
-                        </div>
+                      <div className="row" style={{ width: '18rem', height: '4.4rem', background: '#0f1424' }}>
+                        {item.active ? <div className="col-md-4 position-relative" onMouseMove={() => this.mouseMove(id, 2)} onMouseLeave={() => this.mouseLeave(id, 2)}>
+                          <img className="rounded-circle position-absolute" src={item.images['1'] ? item.images['1'].url : '/user.png'} alt="..." style={{ width: 64, height: 64, zIndex: 1 }} />
+                          {
+                            item.playing ? <div className="position-absolute" style={{ top: '25%', left: '30%', zIndex: 2 }}><FontAwesomeIcon onClick={() => this.pause()} icon={faPauseCircle} size="2x" color="white" /></div> :
+                              <div className="position-absolute" style={{ top: '25%', left: '30%', zIndex: 2 }}><FontAwesomeIcon onClick={() => this.playContext(id, item.uri, 2)} icon={faPlayCircle} size="2x" color="white" /></div>
+                          }
+                        </div> :
+                          <div className="col-md-4 position-relative" onMouseMove={() => this.mouseMove(id, 2)} onMouseLeave={() => this.mouseLeave(id, 2)}>
+                            <img className="rounded-circle position-absolute" src={item.images['1'] ? item.images['1'].url : '/user.png'} alt="..." style={{ width: 64, height: 64 }} />
+                            {item.playing && <div className="position-absolute" style={{ top: '25%', left: '30%', zIndex: 2 }}><FontAwesomeIcon icon={faVolumeUp} size="2x" color="white" /></div>}
+                          </div>
+                        }
                         <div className="col-md-8">
                           <h5 style={{ fontSize: '13px', color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</h5>
                         </div>
@@ -272,10 +381,20 @@ class Search extends React.Component {
                 <div className="d-flex flex-row flex-wrap justify-content-start">
                   {
                     this.state.tracks ? this.state.tracks.items.map((item, id) => <div key={id} className="item">
-                      <div className="row" style={{ width: '18rem', height: '5rem', background: '#0f1424' }}>
-                        <div className="col-md-4">
-                          <img src={item.album.images['1'] ? item.album.images['1'].url : '/dvd.png'} alt="..." style={{ width: 64, height: 64 }} />
-                        </div>
+                      <div className="row" style={{ width: '18rem', height: '4.4rem', background: '#0f1424' }}>
+                        {
+                          item.active ? <div className="col-md-4 position-relative" onMouseMove={() => this.mouseMove(id, 3)} onMouseLeave={() => this.mouseLeave(id, 3)}>
+                            <img className="position-absolute" src={item.album.images['1'] ? item.album.images['1'].url : '/dvd.png'} alt="..." style={{ width: 64, height: 64, zIndex: 1 }} />
+                            {
+                              item.playing ? <div className="position-absolute" style={{ top: '25%', left: '30%', zIndex: 2 }}><FontAwesomeIcon onClick={() => this.pause()} icon={faPauseCircle} size="2x" color="white" /></div> :
+                                <div className="position-absolute" style={{ top: '25%', left: '30%', zIndex: 2 }}><FontAwesomeIcon onClick={() => this.playContext(id, item.uri, 3)} icon={faPlayCircle} size="2x" color="white" /></div>
+                            }
+                          </div> :
+                            <div className="col-md-4 position-relative" onMouseMove={() => this.mouseMove(id, 3)} onMouseLeave={() => this.mouseLeave(id, 3)}>
+                              <img className="position-absolute" src={item.album.images['1'] ? item.album.images['1'].url : '/dvd.png'} alt="..." style={{ width: 64, height: 64, zIndex: 1 }} />
+                              {item.playing && <div className="position-absolute" style={{ top: '25%', left: '30%', zIndex: 2 }}><FontAwesomeIcon icon={faVolumeUp} size="2x" color="white" /></div>}
+                            </div>
+                        }
                         <div className="col-md-8">
                           <div className="row">
                             <div className="col-md-12" style={{ height: '2rem', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -302,16 +421,26 @@ class Search extends React.Component {
                 <div className="dropdown-divider" style={{ borderColor: '#272729' }}></div>
               </div>
             </div>
-            <div className="row">
+            <div className="row mb-customize">
               <div className="col-md-12">
                 <div className="d-flex flex-row flex-wrap justify-content-start">
                   {
                     this.state.playlists ? this.state.playlists.items.map((item, id) => <div key={id} className="item">
 
-                      <div className="row" style={{ width: '18rem', height: '5rem', background: '#0f1424' }}>
-                        <div className="col-md-4">
-                          <img src={item.images['0'] ? item.images['0'].url : '/dvd.png'} alt="..." style={{ width: 64, height: 64 }} />
-                        </div>
+                      <div className="row" style={{ width: '18rem', height: '4.4rem', background: '#0f1424' }}>
+                        {
+                          item.active ? <div className="col-md-4 position-relative" onMouseMove={() => this.mouseMove(id, 4)} onMouseLeave={() => this.mouseLeave(id, 4)}>
+                            <img className="position-absolute" src={item.images['0'] ? item.images['0'].url : '/dvd.png'} alt="..." style={{ width: 64, height: 64, zIndex: 1 }} />
+                            {
+                              item.playing ? <div className="position-absolute" style={{ top: '25%', left: '30%', zIndex: 2 }}><FontAwesomeIcon onClick={() => this.pause()} icon={faPauseCircle} size="2x" color="white" /></div> :
+                                <div className="position-absolute" style={{ top: '25%', left: '30%', zIndex: 2 }}><FontAwesomeIcon onClick={() => this.playContext(id, item.uri, 4)} icon={faPlayCircle} size="2x" color="white" /></div>
+                            }
+                          </div> :
+                            <div className="col-md-4 position-relative" onMouseMove={() => this.mouseMove(id, 4)} onMouseLeave={() => this.mouseLeave(id, 4)}>
+                              <img className="position-absolute" src={item.images['0'] ? item.images['0'].url : '/dvd.png'} alt="..." style={{ width: 64, height: 64, zIndex: 1 }} />
+                              {item.playing && <div className="position-absolute" style={{ top: '25%', left: '30%', zIndex: 2 }}><FontAwesomeIcon icon={faVolumeUp} size="2x" color="white" /></div>}
+                            </div>
+                        }
                         <div className="col-md-8">
                           <div className="row">
                             <div className="col-md-12" style={{ height: '2rem', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -337,7 +466,11 @@ class Search extends React.Component {
 
 const mapStateToProps = (state, ownProps) => {
   return {
-    access_token: state.spotify.access_token
+    access_token: state.spotify.access_token,
+    context_uri: state.spotify.context_uri,
+    track_uri: state.spotify.track_uri,
+    linked_from_uri: state.spotify.linked_from_uri,
+    position_ms: state.spotify.position_ms
   }
 }
 
@@ -346,7 +479,10 @@ const mapDispatchToProps = (dispatch, ownProps) => {
     setRefreshAction: () => {
       dispatch({ type: SpotifyConstants.REFRESH_TOKEN })
     },
-    setAccessToken: (access_token) => dispatch({ type: SpotifyConstants.CHANGE_ACCESS_TOKEN, access_token: access_token })
+    setAccessToken: (access_token) => dispatch({ type: SpotifyConstants.CHANGE_ACCESS_TOKEN, access_token: access_token }),
+    setContextUri: context_uri => dispatch({ type: SpotifyConstants.CHANGE_CONTEXT_URI, context_uri: context_uri, playing: true }),
+    setPlaying : playing => dispatch({type: SpotifyConstants.CHANGE_PLAYING, playing: playing})
+
   }
 }
 

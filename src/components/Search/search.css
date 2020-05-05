@@ -46,4 +46,8 @@
     background-color: rgb(48, 50, 51) !important;
     cursor: pointer;
   }
+
+  .mb-customize {
+    margin-bottom: 3.5rem !important;
+  }
   

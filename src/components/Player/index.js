@@ -53,8 +53,11 @@ class Player extends React.Component {
             const linked_from_uri = currentTrack.linked_from_uri;
             if(track_uri === this.props.track_uri || track_uri === this.props.linked_from_uri) {
                 this.props.setRepeat(true);
-            } else this.props.setRepeat(false)
-            this.props.setTrackUri(track_uri, linked_from_uri);
+            }
+            if(this.props.track_uri !== track_uri || track_uri !== this.props.linked_from_uri)
+            {
+                this.props.setTrackUri(track_uri, linked_from_uri)
+            }
             const artistName = currentTrack.artists
                 .map(artist => artist.name)
                 .join(", ");
@@ -351,7 +354,8 @@ const mapStateToProps = (state, ownProps) => {
         access_token: state.spotify.access_token,
         context_uri: state.spotify.context_uri,
         track_uri: state.spotify.track_uri,
-        linked_from_uri: state.spotify.linked_from_uri
+        linked_from_uri: state.spotify.linked_from_uri,
+        repeat_track: state.spotify.repeat_track
     }
 }
 
