@@ -9,10 +9,12 @@ import Search from '../components/Search';
 import Player from '../components/Player';
 import Playlist from '../components/Playlist';
 import Album from '../components/Album';
+import Track from '../components/Track';
+import Artist from '../components/Artist';
 import { connect } from 'react-redux';
 
 const SpotifyContainer = (props) => {
-    const {authenticate} = props;
+    const { authenticate } = props;
     return (
         <div className="spotify-container" style={{backgroundColor: ''}}>
         <Route render={(props) => <Navbar {...props} isShow={authenticate} />}/>
@@ -22,6 +24,8 @@ const SpotifyContainer = (props) => {
                 <Route path="/search" render={(props) => <Search {...props} />}/>
                 <Route exact path="/playlists/:id" render={(props) => <Playlist {...props} />}/>
                 <Route exact path="/album/:id" render={(props) => <Album {...props} />}/>
+                <Route exact path="/track/:id" render={(props) => <Track {...props} />}/>
+                <Route exact path="/artist/:id" render={(props) => <Artist {...props} />}/>
             </Switch>
         {
            props.authenticate ? <Route render={(props) => <Player {...props} />}/>: null 

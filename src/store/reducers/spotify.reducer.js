@@ -32,6 +32,8 @@ export const SpotifyReducer = (state = initState, action) => {
       return {...state, repeat_track: action.repeat_track};
     case SpotifyConstants.POSITION_MS:
       return {...state, position_ms: action.position_ms};
+    case SpotifyConstants.USER:
+      return {...state, user: action.user};
     default:
       return state;
   }

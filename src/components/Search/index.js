@@ -359,7 +359,7 @@ class Search extends React.Component {
                           </div>
                         }
                         <div className="col-md-8">
-                          <h5 style={{ fontSize: '13px', color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</h5>
+                          <Link to={`/artist/${item.id}`} style={{ fontSize: '13px', color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</Link>
                         </div>
                       </div>
                     </div>) : null
@@ -398,7 +398,7 @@ class Search extends React.Component {
                         <div className="col-md-8">
                           <div className="row">
                             <div className="col-md-12" style={{ height: '2rem', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                              <h5 style={{ fontSize: '13px', color: '#fff' }}>{item.name}</h5>
+                              <Link to={`/track/${item.album.id}`} style={{ fontSize: '13px', color: '#fff', textDecoration: 'none' }}>{item.name}</Link>
                             </div>
                             <div className="col-md-12" style={{ height: '2rem', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                               <p style={{ color: '#57575c' }}>{item.artists.map(artist => artist.name).join(',')}</p>

@@ -1,25 +1,23 @@
 import React from 'react';
-import { refreshAccessToken } from '../../helper/token';
 import { SpotifyConstants } from '../../store/constants';
 import { connect } from 'react-redux';
+import { refreshAccessToken} from '../../helper/token';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlayCircle, faPauseCircle, faVolumeUp, faClock, faCalendarAlt } from '@fortawesome/free-solid-svg-icons';
-import { Link } from 'react-router-dom';
+import { faPlayCircle, faPauseCircle, faVolumeUp, faClock } from '@fortawesome/free-solid-svg-icons';
 
-class Album extends React.Component {
+class Track extends React.Component {
     constructor(props) {
         super(props);
 
         this.state = {
             album: null,
-            isRefresh: false,
             items: [],
             id_played: -1,
             next_track: '',
             uri_album: '',
             state_changed: false,
             duration_album: 0
-        }
+        };
     }
 
     getAlbum() {
@@ -193,7 +191,7 @@ class Album extends React.Component {
                     }))
                 } else {
                     this.setState({
-                        isRefresh: false, album: album, items: album.tracks.items.map(item => {
+                        album: album, items: album.tracks.items.map(item => {
                             //return { ...item, isActive: false, isPlaying: false }
                             if (item.uri === this.props.track_uri || item.uri === this.props.linked_from_uri) {
                                 return { ...item, isActive: false, isPlaying: true }
@@ -207,12 +205,6 @@ class Album extends React.Component {
     }
 
     componentDidUpdate(prevProps, prevState) {
-        // if (this.state.isRefresh) {
-        //     this.getAlbum()
-        //         .then(album => {
-        //             this.setState({ isRefresh: false, album: album })
-        //         })
-        // }
         if (prevProps.track_uri !== this.props.track_uri) {
             this.setState(state => ({
                 items: state.items.map((item, id) => {
@@ -368,4 +360,4 @@ const mapDispatchToProps = (dispatch, ownProps) => {
     }
 }
 
-export default connect(mapStateToProps, mapDispatchToProps)(Album);
+export default connect(mapStateToProps, mapDispatchToProps)(Track);

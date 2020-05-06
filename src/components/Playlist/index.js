@@ -2,11 +2,26 @@ import React from 'react';
 import { refreshAccessToken } from '../../helper/token';
 import './playlist.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlayCircle, faHeart, faPauseCircle, faVolumeUp, faClock, faCalendarAlt } from '@fortawesome/free-solid-svg-icons';
+import { faPlayCircle, faHeart, faPauseCircle, faVolumeUp, faClock, faCalendarAlt, faEllipsisH } from '@fortawesome/free-solid-svg-icons';
 import { Link } from 'react-router-dom';
 import { connect } from 'react-redux';
 import { SpotifyConstants } from '../../store/constants';
 import moment from 'moment';
+//import ContextMenu from '../Context/Menu';
+import {ContextMenu, MenuItem, ContextMenuTrigger} from 'react-contextmenu';
+
+const attributes = {
+    className: 'custom-root',
+    disabledclassname: 'custom-disabled',
+    dividerclassname: 'custom-divider',
+    selectedclassname: 'custom-selected'
+}
+
+const collect = props => ({
+    uri: props.uri,
+    albumId: props.albumId,
+    artistId: props.artistId
+})
 
 class Playlist extends React.Component {
     constructor(props) {
@@ -20,8 +35,11 @@ class Playlist extends React.Component {
             id_played: -1,
             next_track: '',
             state_changed: false,
-            duration_playlist: 0
+            duration_playlist: 0,
+            toggle: false
         }
+
+        this.ID = 'menu';
 
     }
 
@@ -40,7 +58,7 @@ class Playlist extends React.Component {
     mouseMove(id) {
         const items = this.state.items.map((item, index) => {
             if (id === index) {
-                return { ...item, isActive: true }
+                return { ...item, isActive: true, contextmenu: true }
             }
             return item;
         });
@@ -52,13 +70,31 @@ class Playlist extends React.Component {
     mouseLeave(id) {
         const items = this.state.items.map((item, index) => {
             if (id === index) {
-                return { ...item, isActive: false }
+                return { ...item, isActive: false, contextmenu: false }
             }
             return item;
         });
 
 
         this.setState({ items: items })
+    }
+
+    addToQueue(event, data) {
+        const deviceId = localStorage.getItem('deviceId');
+        fetch(`https://api.spotify.com/v1/me/player/queue?device_id=${deviceId}&uri=${data.uri}`, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${this.props.access_token}`
+            }
+        })
+    }
+
+    gotoAlbum(event, data) {
+        this.props.history.push(`/album/${data.albumId}`);
+    }
+
+    handleClick() {
+        this.setState(state => ({toggle: !state.toggle}) )
     }
 
     toMinutesSecond(duration) {
@@ -77,7 +113,7 @@ class Playlist extends React.Component {
     }
 
     shouldComponentUpdate(nextProps, nextState) {
-        if(nextState !== this.state || nextProps.playing !== this.props.playing || nextProps.track_uri !== this.props.track_uri)
+        if (nextState !== this.state || nextProps.playing !== this.props.playing || nextProps.track_uri !== this.props.track_uri)
             return true;
         return false;
     }
@@ -85,10 +121,10 @@ class Playlist extends React.Component {
     playPlaylist(uri) {
         const deviceId = localStorage.getItem('deviceId');
         let isUri = false, isLinked = false;
-        for( const item of this.state.items) {
-            if(item.track.uri === this.props.track_uri) 
-                isUri = true; 
-            if(item.track.uri === this.props.linked_from_uri) 
+        for (const item of this.state.items) {
+            if (item.track.uri === this.props.track_uri)
+                isUri = true;
+            if (item.track.uri === this.props.linked_from_uri)
                 isLinked = true;
         }
         !isUri ? fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
@@ -100,7 +136,7 @@ class Playlist extends React.Component {
             body: JSON.stringify({
                 'context_uri': uri
             })
-        }): fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
+        }) : fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
             method: 'PUT',
             headers: {
                 Authorization: `Bearer ${this.props.access_token}`,
@@ -108,7 +144,7 @@ class Playlist extends React.Component {
             },
             body: JSON.stringify({
                 'context_uri': uri,
-                'offset': {'uri' : isLinked ? this.props.linked_from_uri: this.props.track_uri},
+                'offset': { 'uri': isLinked ? this.props.linked_from_uri : this.props.track_uri },
                 'position_ms': this.props.position_ms
             })
         })
@@ -118,14 +154,16 @@ class Playlist extends React.Component {
         !isUri ? this.setState(state => ({
             state_changed: !state.state_changed,
             items: state.items.map((item, id) => {
-                if (id === 0) return { ...item, isPlaying: true }
-                return { ...item, isPlaying: false };
+                if (id === 0) return { ...item, isPlaying: true, contextmenu: true }
+                return { ...item, isPlaying: false, contextmenu: false };
             })
-        })): 
-        this.setState(state => ({ state_changed: !state.state_changed,items: state.items.map((item, id) => {
-            if (item.track.uri === this.props.track_uri || item.track.uri === this.props.linked_from_uri) return { ...item, isPlaying: true }
-            return { ...item, isPlaying: false };
-        })}))
+        })) :
+            this.setState(state => ({
+                state_changed: !state.state_changed, items: state.items.map((item, id) => {
+                    if (item.track.uri === this.props.track_uri || item.track.uri === this.props.linked_from_uri) return { ...item, isPlaying: true, contextmenu: true }
+                    return { ...item, isPlaying: false, contextmenu: false };
+                })
+            }))
     }
 
     playTrack(id, uri) {
@@ -133,15 +171,15 @@ class Playlist extends React.Component {
         const deviceId = localStorage.getItem('deviceId');
         const items = this.state.items.map((item, index) => {
 
-                if (index === id) {
-                    return { ...item, isPlaying: true }
-                }
+            if (index === id) {
+                return { ...item, isPlaying: true, contextmenu: true }
+            }
 
-                return {...item, isPlaying: false}
-            })
+            return { ...item, isPlaying: false, contextmenu: false }
+        })
 
         this.setState(state => ({ items: items, state_changed: !state.state_changed }));
-        if(this.props.track_uri !== uri && this.props.linked_from_uri !== uri) {
+        if (this.props.track_uri !== uri && this.props.linked_from_uri !== uri) {
             fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
                 method: 'PUT',
                 headers: {
@@ -210,9 +248,9 @@ class Playlist extends React.Component {
                     this.setState({
                         data: data, items: data.tracks.items.map((item) => {
                             if (item.track.uri === this.props.track_uri || item.track.uri === this.props.linked_from_uri) {
-                                return { ...item, isActive: false, isPlaying: true }
+                                return { ...item, isActive: false, isPlaying: true, contextmenu: true }
                             }
-                            return { ...item, isActive: false, isPlaying: false }
+                            return { ...item, isActive: false, isPlaying: false, contextmenu: false }
                         }),
                         uris: data.tracks.items.map(item => item.track.uri),
                         uri_playlist: data.uri,
@@ -242,8 +280,8 @@ class Playlist extends React.Component {
         // if(!this.props.playing) {
 
         // }
-        if(prevProps.playing !== this.props.playing) {
-            this.setState(state => ({state_changed: this.props.playing}))
+        if (prevProps.playing !== this.props.playing) {
+            this.setState(state => ({ state_changed: this.props.playing }))
         }
         if (prevProps.track_uri !== this.props.track_uri) {
             this.setState(state => ({
@@ -302,14 +340,14 @@ class Playlist extends React.Component {
                                             <div className="col-md-12 col-sm-12 mt-2">
                                                 <div className="row">
                                                     <div className="col-md-2">
-                                                        {!this.state.state_changed ? <button onClick={() => this.playPlaylist(this.state.uri_playlist)} className="btn-small btn-green">PLAY</button>:
-                                                        <button onClick={() => this.pauseTrack()} className="btn-small btn-green">PAUSE</button>}
+                                                        {!this.state.state_changed ? <button onClick={() => this.playPlaylist(this.state.uri_playlist)} className="btn-small btn-green">PLAY</button> :
+                                                            <button onClick={() => this.pauseTrack()} className="btn-small btn-green">PAUSE</button>}
                                                     </div>
-                                                    <div className="col-md-10 text-right" style={{color: '#64676e'}}>
+                                                    <div className="col-md-10 text-right" style={{ color: '#64676e' }}>
                                                         Followers
                                                     </div>
                                                 </div>
-                                                
+
                                             </div>
                                         </div>
                                     </div>
@@ -322,115 +360,83 @@ class Playlist extends React.Component {
                         </div>
                         <div className="col-md-12">
                             <div className="container-fluid">
-                                <div className="row">
+                                <div className="row" >
                                     <div className="col-md-12" style={{ maxHeight: '900px', overflowY: 'scroll' }}>
                                         <div className="d-flex flex-column justify-content-start">
                                             <div className="track-header">
                                                 <div className="row" style={{ height: '100%', paddingTop: '10px' }}>
                                                     <div className="col-sm-1 col-xs-1" style={{ color: '#8c8382' }}></div>
-                                                    <div className="col-sm-4 col-xs-4" style={{ color: '#8c8382', marginLeft: '-70px' }}>Title</div>
+                                                    <div className="col-sm-3 col-xs-3" style={{ color: '#8c8382', marginLeft: '-70px' }}>Title</div>
                                                     <div className="col-sm-2 col-xs-2" style={{ color: '#8c8382' }}>Artist</div>
                                                     <div className="col-sm-2 col-xs-2" style={{ color: '#8c8382' }}>Album</div>
                                                     <div className="col-sm-2 col-xs-2" style={{ color: '#8c8382' }}><FontAwesomeIcon icon={faCalendarAlt} /></div>
-                                                    <div className="col-sm-1 col-xs-1" style={{ color: '#8c8382' }}><FontAwesomeIcon icon={faClock}  /></div>
+                                                    <div className="col-sm-1 col-xs-1"></div>
+                                                    <div className="col-sm-1 col-xs-1" style={{ color: '#8c8382' }}><FontAwesomeIcon icon={faClock} /></div>
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="d-flex flex-column justify-content-start">
+                                        <div className="d-flex flex-column justify-content-start" >
                                             {
-                                                this.state.items.map((item, id) => item.isPlaying ? <div key={id}
+                                                this.state.items.map((item, id) =>  <ContextMenuTrigger 
+                                                key={id} id={this.ID} 
+                                                uri={item.track.uri} 
+                                                artistId={item.track.artists['0'].id}
+                                                albumId={item.track.album.id}
+                                                collect={collect}
+                                                ><div 
                                                     onMouseMove={() => this.mouseMove(id)}
                                                     onMouseLeave={() => this.mouseLeave(id)}
-                                                    className="track active">
+                                                    className={`${item.isPlaying ? 'track active': 'track'}  `}
+                                                    >
                                                     <div className="row" style={{ height: '100%', paddingTop: '10px' }}>
                                                         {
                                                             item.isActive ? <div className="col-sm-1 col-xs-1">
                                                                 {
-                                                                    ((item.isPlaying && this.state.state_changed) ) ? <FontAwesomeIcon icon={faPauseCircle} onClick={() => this.pauseTrack()} color="#c4c4be" size="2x" /> :
-                                                                    <FontAwesomeIcon icon={faPlayCircle} onClick={() => this.playTrack(id, item.track.uri)} color="#c4c4be" size="2x" />
+                                                                    ((item.isPlaying && this.state.state_changed)) ? <FontAwesomeIcon icon={faPauseCircle} onClick={() => this.pauseTrack()} color="#c4c4be" size="2x" /> :
+                                                                        <FontAwesomeIcon icon={faPlayCircle} onClick={() => this.playTrack(id, item.track.uri)} color="#c4c4be" size="2x" />
                                                                 }
                                                             </div>
                                                                 : <div className="col-sm-1 col-xs-1">
                                                                     {
-                                                                        (item.isPlaying ) ? <FontAwesomeIcon icon={faVolumeUp} color="#c4c4be" /> : null
+                                                                        (item.isPlaying) ? <FontAwesomeIcon icon={faVolumeUp} color="#c4c4be" /> : null
                                                                     }
                                                                 </div>
                                                         }
-                                                        <div className="col-sm-4 col-xs-4" style={{ marginLeft: '-70px',color: '#4ca331' }} >
+                                                        <div className="col-sm-3 col-xs-3" style={{ marginLeft: '-70px', color: item.isPlaying ? '#4ca331': '' }} >
                                                             <div className="row">
                                                                 <div className="col-sm-11 col-xs-11">
                                                                     {item.track.name}
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                        <div className="col-sm-2 col-xs-2" style={{color: '#4ca331'}}>
+                                                        <div className="col-sm-2 col-xs-2" style={{ color: item.isPlaying ? '#4ca331': '' }}>
                                                             {
                                                                 item.track.artists[0].name
                                                             }
                                                         </div>
                                                         <div className="col-sm-2 col-xs-2">
-                                                            <Link style={{ textDecoration: 'none',color: '#4ca331' }} to={`/album/${item.track.album.id}`}>                                                           {
+                                                            <Link style={{ textDecoration: 'none', color: item.isPlaying ? '#4ca331': '#c4c4be' }} to={`/album/${item.track.album.id}`}>                                                           {
                                                                 item.track.album.name
                                                             }</Link>
                                                         </div>
-                                                        <div className="col-sm-2 col-xs-2" style={{color: '#4ca331'}}>
+                                                        <div className="col-sm-2 col-xs-2" style={{ color: item.isPlaying ? '#4ca331': '' }}>
                                                             {
                                                                 moment(item.added_at).fromNow()
                                                             }
                                                         </div>
-                                                        <div className="col-sm-1 col-xs-1" style={{color: '#4ca331'}}>
+                                                        <div className="col-sm-1 col-xs-1">
+                                                            <ContextMenuTrigger holdToDisplay={1} id={this.state.toggle ? this.ID: ''}>{item.contextmenu && <FontAwesomeIcon onClick={this.handleClick.bind(this)} icon={faEllipsisH} />}</ContextMenuTrigger>
+                                                        </div>
+                                                        <div className="col-sm-1 col-xs-1" style={{ color: item.isPlaying ? '#4ca331': '' }}>
                                                             {
                                                                 this.toMinutesSecond(item.track.duration_ms)
                                                             }
                                                         </div>
                                                     </div>
                                                     <div className="dropdown-divider" style={{ borderColor: '#1a1c1f' }}></div>
-                                                </div> : <div key={id}
-                                                    onMouseMove={() => this.mouseMove(id)}
-                                                    onMouseLeave={() => this.mouseLeave(id)}
-                                                    className="track">
-                                                        <div className="row" style={{ height: '100%', paddingTop: '10px' }}>
-                                                            {
-                                                                item.isActive ? <div className="col-sm-1 col-xs-1">
-                                                                    {
-                                                                        (item.isPlaying && this.state.state_changed)? <FontAwesomeIcon icon={faPauseCircle} onClick={() => this.pauseTrack()} color="#c4c4be" size="2x" /> :
-                                                                        <FontAwesomeIcon icon={faPlayCircle} onClick={() => this.playTrack(id, item.track.uri)} color="#c4c4be" size="2x" />
-                                                                    }
-                                                                </div>
-                                                                    : <div className="col-sm-1 col-xs-1">
-                                                                    </div>
-                                                            }
-                                                            <div className="col-sm-4 col-xs-4" style={{ marginLeft: '-70px' }}>
-                                                                <div className="row">
-                                                                    <div className="col-sm-11 col-xs-11">
-                                                                        {item.track.name}
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                            <div className="col-sm-2 col-xs-2">
-                                                                {
-                                                                    item.track.artists[0].name
-                                                                }
-                                                            </div>
-                                                            <div className="col-sm-2 col-xs-2 ">
-                                                                <Link style={{color: '#c4c4be', textDecoration: 'none' }} to={`/album/${item.track.album.id}`}>                                                           {
-                                                                    item.track.album.name
-                                                                }</Link>
-                                                            </div>
-                                                            <div className="col-sm-2 col-xs-2" style={{color: '#c4c4be'}}>
-                                                                {
-                                                                    moment(item.added_at).fromNow()
-                                                                }
-                                                            </div>
-                                                            <div className="col-sm-1 col-xs-1" style={{color: '#c4c4be'}}>
-                                                                {
-                                                                    this.toMinutesSecond(item.track.duration_ms)
-                                                                }
-                                                            </div>
-                                                        </div>
-                                                        <div className="dropdown-divider" style={{ borderColor: '#1a1c1f' }}></div>
-                                                    </div>
 
+                                                </div>
+                                                    </ContextMenuTrigger>
                                                 )
                                             }
                                         </div>
@@ -438,8 +444,21 @@ class Playlist extends React.Component {
                                 </div>
                             </div>
                         </div>
+                        <ContextMenu id={this.ID}>
+                            <MenuItem 
+                            data={{}} 
+                            attributes={attributes}
+                            onClick={this.addToQueue.bind(this)}
+                            >Add to Queue</MenuItem>
+                            <MenuItem 
+                            data={{}} 
+                            attributes={attributes}
+                            onClick={this.gotoAlbum.bind(this)}
+                            >Go to Album</MenuItem>
+                        </ContextMenu>
                     </div>
                 }
+
             </div>
         )
     }
@@ -449,7 +468,7 @@ const mapStateToProps = (state, ownProps) => {
     return {
         track_uri: state.spotify.track_uri,
         linked_from_uri: state.spotify.linked_from_uri,
-        access_token: state.spotify.access_token, 
+        access_token: state.spotify.access_token,
         position_ms: state.spotify.position_ms,
         playing: state.spotify.playing
     }
