@@ -364,7 +364,7 @@ class Playlist extends React.Component {
                                     <div className="col-md-12" style={{ maxHeight: '900px', overflowY: 'scroll' }}>
                                         <div className="d-flex flex-column justify-content-start">
                                             <div className="track-header">
-                                                <div className="row" style={{ height: '100%', paddingTop: '10px' }}>
+                                                <div className="row" style={{ height: '100%' }}>
                                                     <div className="col-sm-1 col-xs-1" style={{ color: '#8c8382' }}></div>
                                                     <div className="col-sm-3 col-xs-3" style={{ color: '#8c8382', marginLeft: '-70px' }}>Title</div>
                                                     <div className="col-sm-2 col-xs-2" style={{ color: '#8c8382' }}>Artist</div>
@@ -388,17 +388,17 @@ class Playlist extends React.Component {
                                                     onMouseLeave={() => this.mouseLeave(id)}
                                                     className={`${item.isPlaying ? 'track active': 'track'}  `}
                                                     >
-                                                    <div className="row" style={{ height: '100%', paddingTop: '10px' }}>
+                                                    <div className="row" style={{ height: '100%', paddingTop: '5px' }}>
                                                         {
                                                             item.isActive ? <div className="col-sm-1 col-xs-1">
                                                                 {
-                                                                    ((item.isPlaying && this.state.state_changed)) ? <FontAwesomeIcon icon={faPauseCircle} onClick={() => this.pauseTrack()} color="#c4c4be" size="2x" /> :
-                                                                        <FontAwesomeIcon icon={faPlayCircle} onClick={() => this.playTrack(id, item.track.uri)} color="#c4c4be" size="2x" />
+                                                                    ((item.isPlaying && this.state.state_changed)) ? <FontAwesomeIcon icon={faPauseCircle} onClick={() => this.pauseTrack()} color="#c4c4be" style={{marginLeft: '5px',fontSize: '1.5rem'}} /> :
+                                                                        <FontAwesomeIcon icon={faPlayCircle} onClick={() => this.playTrack(id, item.track.uri)} color="#c4c4be" style={{marginLeft: '5px',fontSize: '1.5rem'}} />
                                                                 }
                                                             </div>
                                                                 : <div className="col-sm-1 col-xs-1">
                                                                     {
-                                                                        (item.isPlaying) ? <FontAwesomeIcon icon={faVolumeUp} color="#c4c4be" /> : null
+                                                                        (item.isPlaying) ? <FontAwesomeIcon icon={faVolumeUp} color="#c4c4be" style={{marginLeft: '5px',fontSize: '1rem'}} /> : null
                                                                     }
                                                                 </div>
                                                         }
@@ -433,7 +433,6 @@ class Playlist extends React.Component {
                                                             }
                                                         </div>
                                                     </div>
-                                                    <div className="dropdown-divider" style={{ borderColor: '#1a1c1f' }}></div>
 
                                                 </div>
                                                     </ContextMenuTrigger>

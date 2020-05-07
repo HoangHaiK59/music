@@ -3,8 +3,7 @@ import { refreshAccessToken } from '../../helper/token';
 import { SpotifyConstants } from '../../store/constants';
 import { connect } from 'react-redux';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlayCircle, faPauseCircle, faVolumeUp, faClock, faCalendarAlt } from '@fortawesome/free-solid-svg-icons';
-import { Link } from 'react-router-dom';
+import { faPlayCircle, faPauseCircle, faVolumeUp, faClock } from '@fortawesome/free-solid-svg-icons';
 
 class Album extends React.Component {
     constructor(props) {
@@ -287,7 +286,7 @@ class Album extends React.Component {
                                     <div className="col-md-12" style={{ maxHeight: '900px', overflowY: 'scroll' }}>
                                         <div className="d-flex flex-column justify-content-start">
                                             <div className="track-header">
-                                                <div className="row" style={{ height: '100%', paddingTop: '10px' }}>
+                                                <div className="row mt-1" style={{ height: '100%' }}>
                                                     <div className="col-sm-1 col-xs-1" style={{ color: '#8c8382' }}></div>
                                                     <div className="col-sm-5 col-xs-5" style={{ color: '#8c8382', marginLeft: '-70px' }}>Title</div>
                                                     <div className="col-sm-5 col-xs-5" style={{ color: '#8c8382' }}>Artist</div>
@@ -301,17 +300,17 @@ class Album extends React.Component {
                                                     onMouseMove={() => this.mouseMove(id)}
                                                     onMouseLeave={() => this.mouseLeave(id)}
                                                     className={`${item.isPlaying? 'track active': 'track'}`}>
-                                                    <div className="row" style={{ height: '100%', paddingTop: '10px' }}>
+                                                    <div className="row mt-1" style={{ height: '100%' }}>
                                                         {
                                                             item.isActive ? <div className="col-sm-1 col-xs-1">
                                                                 {
-                                                                    (item.isPlaying && this.props.playing) ? <FontAwesomeIcon icon={faPauseCircle} onClick={() => this.pauseTrack()} color="#c4c4be" size="2x" /> :
-                                                                        <FontAwesomeIcon icon={faPlayCircle} onClick={() => this.playTrack(id, item.uri)} color="#c4c4be" size="2x" />
+                                                                    (item.isPlaying && this.props.playing) ? <FontAwesomeIcon icon={faPauseCircle} onClick={() => this.pauseTrack()} color="#c4c4be" style={{marginLeft: '5px',fontSize: '1.5rem'}} /> :
+                                                                        <FontAwesomeIcon icon={faPlayCircle} onClick={() => this.playTrack(id, item.uri)} color="#c4c4be" style={{marginLeft: '5px', fontSize: '1.5rem'}} />
                                                                 }
                                                             </div>
                                                                 : <div className="col-sm-1 col-xs-1">
                                                                     {
-                                                                        item.isPlaying ? <FontAwesomeIcon icon={faVolumeUp} color="#c4c4be" /> : null
+                                                                        item.isPlaying ? <FontAwesomeIcon icon={faVolumeUp} color="#c4c4be" style={{marginLeft: '5px',fontSize: '1rem'}} /> : null
                                                                     }
                                                                 </div>
                                                         }

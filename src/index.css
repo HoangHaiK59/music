@@ -110,16 +110,15 @@ p,h4 {
 
 .track {
   width:100%; 
-  height: 60px;
-  padding: 5px;
+  height: 2.2rem;
   margin-top: 2px;
   color:#c4c4be;
+  border-bottom: 1px solid #1a1c1f;
 }
 
 .track-header {
   width:100%; 
   height: 60px;
-  padding: 5px;
   margin-top: 2px;
 }
 

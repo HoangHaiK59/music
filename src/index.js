@@ -3,8 +3,6 @@ import ReactDOM from "react-dom";
 import App from "./App";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { Provider } from "react-redux";
-import { createStore, applyMiddleware, compose } from "redux";
-import thunkMiddleware from "redux-thunk";
 import { Router } from "react-router";
 import { history } from "./helper/history";
 import './index.css';

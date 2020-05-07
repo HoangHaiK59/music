@@ -1,6 +1,5 @@
 import React from 'react';
 import './progress.css';
-import { SpotifyConstants } from '../../store/constants';
 import { connect } from 'react-redux';
 let start = 0;
 

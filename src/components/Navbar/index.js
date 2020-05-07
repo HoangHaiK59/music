@@ -4,7 +4,7 @@ import { connect } from 'react-redux';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch, faUser } from '@fortawesome/free-solid-svg-icons';
 import { faSpotify } from '@fortawesome/free-brands-svg-icons';
-import { DropdownButton, Dropdown, Button } from 'react-bootstrap';
+import { Dropdown, Button } from 'react-bootstrap';
 import { refreshAccessToken } from '../../helper/token';
 import { Link } from 'react-router-dom';
 

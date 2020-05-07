@@ -7,7 +7,6 @@ import { SpotifyConstants } from '../../store/constants';
 import { connect } from 'react-redux';
 import  Progress  from '../Progress';
 import './player.css';
-var moment = require('moment');
 
 class Player extends React.Component {
     constructor(props) {

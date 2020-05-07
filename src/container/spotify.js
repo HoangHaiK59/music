@@ -1,7 +1,7 @@
 import React from 'react';
 import { Switch, Route } from 'react-router-dom';
-import PublicRoute from '../route/public';
-import PrivateRoute from '../route/private';
+// import PublicRoute from '../route/public';
+// import PrivateRoute from '../route/private';
 import Authen from '../components/Authen';
 import Music from '../components/Music';
 import Navbar from '../components/Navbar';

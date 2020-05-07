@@ -32,7 +32,7 @@ class Music extends React.Component {
       this.props.setAccessToken(access_token);
       localStorage.setItem('refresh_token', refresh_token);
       window.location.hash="";
-    } else 
+    } 
     this.getCurrentsUserPlaylists()
     .then(data => data !== null? this.setState({playlists: data}): refreshAccessToken().then(res => res.json().then(resp => this.props.setAccessToken(resp.access_token))))
   }
