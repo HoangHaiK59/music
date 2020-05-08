@@ -5,6 +5,22 @@ let request = require('request')
 let querystring = require('querystring')
 //var schedule = require('node-schedule');
 let cors = require('cors');
+let firebase = require('firebase');
+
+let CronJob  = require('cron').CronJob;
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB-cSazjO8YNUx_INqQC1xt1r-EJQU1PD8",
+  authDomain: "todo-f6123.firebaseapp.com",
+  databaseURL: "https://todo-f6123.firebaseio.com",
+  projectId: "todo-f6123",
+  storageBucket: "todo-f6123.appspot.com",
+  messagingSenderId: "15763357581",
+  appId: "1:15763357581:web:2d16546a9a0568be2387c4",
+  measurementId: "G-R0972DXH50"
+};
+
+firebase.initializeApp(firebaseConfig);
 
 let app = express()
 // parse JSON
@@ -131,6 +147,13 @@ app.get('/callback', function(req, res) {
           console.log(body);
         });
 
+
+        firebase.firestore().collection('authen').add({
+          access_token: access_token,
+          refresh_token: refresh_token,
+          expired_in: 3600
+        }).then(res => console.log(res.id));
+
         // we can also pass the token to the browser to make requests from there
         res.redirect('http://localhost:3000/home#' +
           querystring.stringify({
@@ -170,6 +193,45 @@ app.get('/refresh_token', function(req, res) {
     }
   });
 });
+
+const refreshToken = () => {
+  firebase.firestore().collection('authen').get()
+  .then(result => result.docs.forEach(doc => {
+    var refresh_token = doc.data().refresh_token;
+    var authOptions = {
+      url: 'https://accounts.spotify.com/api/token',
+      headers: { 'Authorization': 'Basic ' + (new Buffer(client_id + ':' + client_secret).toString('base64')) },
+      form: {
+        grant_type: 'refresh_token',
+        refresh_token: refresh_token
+      },
+      json: true
+    };
+
+    request.post(authOptions, function(error, response, body) {
+      if (!error && response.statusCode === 200) {
+        firebase.firestore().collection('authen').get()
+        .then(result => result.docs.forEach(doc => {
+          firebase.firestore().collection('authen').doc(doc.id).update({
+            access_token: body.access_token
+          })
+        }))
+      }
+    });
+
+  }))
+}
+
+var job = new CronJob('*/50 * * * *', function() {
+  refreshToken();
+  console.log('job running...');
+}, function() {
+  // job stops
+},
+true,
+);
+
+job.start();
 
 console.log('Listening on 8000');
 app.listen(8000);

@@ -5,8 +5,9 @@ import { faHeart, faDesktop, faMobile, faForward, faBackward, faPlay, faPause, f
 import { Repeat } from 'react-feather';
 import { SpotifyConstants } from '../../store/constants';
 import { connect } from 'react-redux';
-import  Progress  from '../Progress';
+import Progress from '../Progress';
 import './player.css';
+import { actions } from '../../store/actions/spotify.action';
 
 class Player extends React.Component {
     constructor(props) {
@@ -29,6 +30,7 @@ class Player extends React.Component {
             device_info: null,
             track_uri: '',
             activePlaybackbar: false,
+            access_token: ''
         };
     }
 
@@ -41,20 +43,19 @@ class Player extends React.Component {
             } = state.track_window;
             console.log(state)
             const playing = !state.paused;
-            if(playing === false) {
+            if (playing === false) {
                 this.props.setChangePlaying(playing);
             }
             const trackName = currentTrack.name;
             const albumName = currentTrack.album.name;
-            const duration =  currentTrack.duration_ms;
+            const duration = currentTrack.duration_ms;
             const id = currentTrack.id;
             const track_uri = currentTrack.uri;
             const linked_from_uri = currentTrack.linked_from_uri;
-            if(track_uri === this.props.track_uri || track_uri === this.props.linked_from_uri) {
+            if (track_uri === this.props.track_uri || track_uri === this.props.linked_from_uri) {
                 this.props.setRepeat(true);
             }
-            if(this.props.track_uri !== track_uri || track_uri !== this.props.linked_from_uri)
-            {
+            if (this.props.track_uri !== track_uri || track_uri !== this.props.linked_from_uri) {
                 this.props.setTrackUri(track_uri, linked_from_uri)
             }
             const artistName = currentTrack.artists
@@ -69,7 +70,7 @@ class Player extends React.Component {
                 albumName,
                 artistName,
                 playing,
-                track_uri, 
+                track_uri,
                 position
             });
         } else {
@@ -113,48 +114,49 @@ class Player extends React.Component {
     }
 
     checkForPlayer() {
-        const { access_token } = this.props;
-        if(access_token === undefined) return;
 
-        // if the Spotify SDK has loaded
-        if (window.Spotify !== null) {
-            // cancel the interval
-            clearInterval(this.playerCheckInterval);
-            // create a new player
-            this.player = new window.Spotify.Player({
-                name: "Hai's Spotify Player",
-                getOAuthToken: cb => { cb(access_token); },
-            });
-            // set up the player's event handlers
-            this.createEventHandlers();
+        actions.getAcessToken()
+            .then(result => result.docs.forEach(doc => {
+                // if the Spotify SDK has loaded
+                const access_token = doc.data().access_token;
+                if (window.Spotify !== null) {
+                    // cancel the interval
+                    clearInterval(this.playerCheckInterval);
+                    // create a new player
+                    this.player = new window.Spotify.Player({
+                        name: "Hai's Spotify Player",
+                        getOAuthToken: cb => { cb(access_token); },
+                    });
+                    // set up the player's event handlers
+                    this.createEventHandlers();
 
-            // finally, connect!
-            this.player.connect();
-        }
+                    // finally, connect!
+                    this.player.connect();
+                }
+            }))
     }
 
     onPrevClick() {
         this.player.previousTrack();
-        this.setState(({playing: true}));
+        this.setState(({ playing: true }));
         this.props.setChangePlaying(true);
     }
 
     onPlayClick() {
         this.player.togglePlay();
         let playing = this.state.playing;
-        this.setState(state => ({playing: !state.playing}))
+        this.setState(state => ({ playing: !state.playing }))
         this.props.setChangePlaying(!playing);
     }
 
     onNextClick() {
         this.player.nextTrack();
-        this.setState(({playing: true}));
+        this.setState(({ playing: true }));
         this.props.setChangePlaying(true);
     }
 
     transferPlaybackHere() {
-        const { deviceId } = this.state;
-        const {access_token} = this.props;
+        const { deviceId, access_token } = this.state;
         localStorage.setItem('deviceId', deviceId);
         // https://beta.developer.spotify.com/documentation/web-api/reference/player/transfer-a-users-playback/
         fetch("https://api.spotify.com/v1/me/player", {
@@ -173,19 +175,19 @@ class Player extends React.Component {
     }
 
     onMouseMove() {
-        this.setState({activePlaybackbar: true});
+        this.setState({ activePlaybackbar: true });
     }
 
     onMouseLeave() {
-        this.setState({activePlaybackbar: false}); 
+        this.setState({ activePlaybackbar: false });
     }
 
-    getDeviceInfo() {
+    getDeviceInfo(access_token) {
         return fetch(`https://api.spotify.com/v1/me/player/devices`,
             {
                 method: 'GET',
                 headers: {
-                    Authorization: 'Bearer ' + this.props.access_token
+                    Authorization: 'Bearer ' + access_token
                 }
             },
 
@@ -198,7 +200,7 @@ class Player extends React.Component {
             {
                 method: 'GET',
                 headers: {
-                    Authorization: 'Bearer ' + this.props.access_token
+                    Authorization: 'Bearer ' + this.state.access_token
                 }
             },
 
@@ -206,55 +208,26 @@ class Player extends React.Component {
     }
 
     componentDidMount() {
-        if(this.props.access_token !== undefined) {
-        this.getDeviceInfo().then(data => {
-            if(data.error) {
-                refreshAccessToken().then(res => res.json().then(resP => {
-                    this.props.setAccessToken(resP.access_token)
-                }))
-            } else {
-                this.setState({device_info: data.devices})
-            }
-        })
-    }
+
+        actions.getAcessToken()
+        .then(result => result.docs.forEach(doc => {
+            this.getDeviceInfo(doc.data().access_token).then(data => {
+
+                this.setState({access_token:doc.data().access_token, device_info: data.devices })
+                
+            })
+        }))
+        
         this.playerCheckInterval = setInterval(() => this.checkForPlayer(), 1000);
     }
 
     componentDidUpdate(prevProps, prevState) {
-        if( prevProps.access_token !== this.props.access_token) {
-            clearInterval(this.playerCheckInterval);
 
-            this.playerCheckInterval = setInterval(() => this.checkForPlayer(), 1000);
-            this.getDeviceInfo().then(data => {
-                if(data.error) {
-                    refreshAccessToken().then(res => res.json().then(resP => {
-                        this.props.setAccessToken(resP.access_token)
-                    }))
-                } else {
-                    this.setState({device_info: data.devices})
-                }
-            })
-        }
-        if (prevState.id !== this.state.id ) {
-            this.getTrackCurrent().then(data => { 
-                if(data.error) {
-                    refreshAccessToken().then(res => res.json().then(resP => {
-                        this.props.setAccessToken(resP.access_token)
-                    }))
-                }
-                this.setState({track: data})
+        if (prevState.id !== this.state.id) {
+            this.getTrackCurrent().then(data => {
+                this.setState({ track: data })
             }
             )
-
-            this.getDeviceInfo().then(data => {
-                if(data.error) {
-                    refreshAccessToken().then(res => res.json().then(resP => {
-                        this.props.setAccessToken(resP.access_token)
-                    }))
-                } else {
-                    this.setState({device_info: data.devices})
-                }
-            })
         }
     }
 
@@ -271,7 +244,7 @@ class Player extends React.Component {
                             <div className="col-md-4">
                                 <div className="row">
                                     <div className="col-md-2">
-                                        <img src={this.state.track.album !== null ? this.state.track.album.images['2'].url: '/public/dvd.png'} alt="" />
+                                        <img src={this.state.track.album !== null ? this.state.track.album.images['2'].url : '/public/dvd.png'} alt="" />
                                     </div>
                                     <div className="col-md-3">
                                         <div className="row">
@@ -325,12 +298,12 @@ class Player extends React.Component {
                                         </div>
                                     </div>
                                     <div className="col-md-12">
-                                        <Progress 
-                                        duration={this.state.duration} 
-                                        id={ this.state.id }
-                                        position = {this.state.position}
-                                        context_uri = {this.props.context_uri}
-                                        repeat_track = {this.props.repeat_track}
+                                        <Progress
+                                            duration={this.state.duration}
+                                            id={this.state.id}
+                                            position={this.state.position}
+                                            context_uri={this.props.context_uri}
+                                            repeat_track={this.props.repeat_track}
                                         />
                                     </div>
                                 </div>
@@ -364,14 +337,14 @@ const mapDispatchToProps = (dispatch, ownProps) => {
             dispatch({ type: SpotifyConstants.REFRESH_TOKEN })
         },
         setTrackUri: (uri, linked_from_uri) => {
-            dispatch({type: SpotifyConstants.CHANGE_TRACK_URI, track_uri: uri, linked_from_uri: linked_from_uri})
+            dispatch({ type: SpotifyConstants.CHANGE_TRACK_URI, track_uri: uri, linked_from_uri: linked_from_uri })
         },
         setChangePlaying: (playing) => {
-            dispatch({type: SpotifyConstants.CHANGE_PLAYING, playing: playing})
+            dispatch({ type: SpotifyConstants.CHANGE_PLAYING, playing: playing })
         },
-        setAccessToken: (access_token) => dispatch({type: SpotifyConstants.CHANGE_ACCESS_TOKEN, access_token: access_token}),
-        setRepeat: (repeat_track) => dispatch({type: SpotifyConstants.REPEAT_TRACK, repeat_track: repeat_track}),
-        setPosition: position_ms => dispatch({type: SpotifyConstants.POSITION_MS, position_ms: position_ms})
+        setAccessToken: (access_token) => dispatch({ type: SpotifyConstants.CHANGE_ACCESS_TOKEN, access_token: access_token }),
+        setRepeat: (repeat_track) => dispatch({ type: SpotifyConstants.REPEAT_TRACK, repeat_track: repeat_track }),
+        setPosition: position_ms => dispatch({ type: SpotifyConstants.POSITION_MS, position_ms: position_ms })
     }
 }
 

@@ -7,6 +7,7 @@ import { faSpotify } from '@fortawesome/free-brands-svg-icons';
 import { Dropdown, Button } from 'react-bootstrap';
 import { refreshAccessToken } from '../../helper/token';
 import { Link } from 'react-router-dom';
+import { actions } from '../../store/actions/spotify.action';
 
 const useFetching = (token) => {
     const [user, setUser] = useState(null);
@@ -40,7 +41,8 @@ const Navbar = ({ isShow, ...props }) => {
         // const url = 'https://www.spotify.com/logout/'                                                                                                                                                                                                                                                                               
         // const spotifyLogoutWindow = window.open(url, 'Spotify Logout', 'width=700,height=500,top=40,left=40')                                                                                                
         // setTimeout(() => spotifyLogoutWindow.close(), 2000);
-        props.logout();
+        //props.logout();
+        props.remove();
         localStorage.removeItem('state');
         props.history.push('/');
     }
@@ -84,11 +86,9 @@ const mapStateToProps = (state, ownProps) => {
 
 const mapDispatchToProps = (dispatch, ownProps) => {
     return {
-        logout: () => {
-            dispatch({ type: SpotifyConstants.LOGOUT })
-        },
         setAccessToken: access_token => dispatch({ type: SpotifyConstants.CHANGE_ACCESS_TOKEN, access_token: access_token }),
-        setUser: user => dispatch({ type: SpotifyConstants.USER, user: user })
+        setUser: user => dispatch({ type: SpotifyConstants.USER, user: user }),
+        remove: () => dispatch(actions.logout())
     }
 }
 
