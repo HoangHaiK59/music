@@ -1,4 +1,5 @@
-import { SpotifyConfig } from "../config"
+import { SpotifyConfig } from "../config";
+import firebase from './firebase';
 
 let refreshToken = localStorage.getItem('refresh_token');
 
@@ -9,11 +10,35 @@ export const refreshAccessToken = () => {
         body: `grant_type=refresh_token&refresh_token=${refreshToken}`,
         headers: {
             'Authorization': `Basic ${new Buffer.from(`${encodeCredentials}`)}`,
-            'Content-Type':'application/x-www-form-urlencoded'
+            'Content-Type': 'application/x-www-form-urlencoded'
         }
     })
 }
 
-let spotify = JSON.parse(localStorage.getItem('state'));
+let authenticate;
 
-export const isAuthenticate = spotify !== null ? (spotify.access_token !== undefined ? true: false): false;
+function isAuthenticate() {
+
+    firebase.firestore().collection('authen')
+    .get()
+    .then(result => {
+        result.docs.forEach(doc => {
+        authenticate =  fetch('https://api.spotify.com/v1/me', {
+            method: 'GET',
+            headers: {
+                Authorization: `Bearer ${doc.data().access_token}`
+            }
+        })
+        .then(res => {
+            if(res.status !== 200) {
+                return null
+            }
+            else return res.json()
+            
+        } )
+
+     })});
+     return authenticate !== null ? true : false
+};
+
+export default isAuthenticate;

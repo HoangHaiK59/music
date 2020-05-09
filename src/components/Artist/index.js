@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlayCircle, faPauseCircle, faVolumeUp, faClock } from '@fortawesome/free-solid-svg-icons';
 import './artist.css';
+import { actions } from '../../store/actions/spotify.action';
 
 class Artist extends React.Component {
     constructor(props) {
@@ -21,6 +22,8 @@ class Artist extends React.Component {
             next: '',
             numItem: 5,
             expanded: false,
+            access_token: '',
+            state_changed: false
         }
 
         this.handleClick = this.handleClick.bind(this);
@@ -30,86 +33,66 @@ class Artist extends React.Component {
         this.setState(state => (state.expanded ? { expanded: !state.expanded, numItem: 5 } : { expanded: !state.expanded, numItem: state.tracks.length }));
     }
 
-    getTopTracks() {
+    getTopTracks(access_token) {
         let id = this.props.match.params.id;;
         return fetch(`https://api.spotify.com/v1/artists/${id}/top-tracks?country=VN`, {
             method: 'GET',
             headers: {
-                Authorization: `Bearer ${this.props.access_token}`
+                Authorization: `Bearer ${access_token !== undefined ? access_token: this.state.access_token}`
             }
         })
             .then(res => {
-                if (res.status !== 200) {
-                    refreshAccessToken().then(resP => resP.json().then(resJ => this.props.setAccessToken(resJ.access_token)));
-                    this.getTopTracks();
-                } else
                     return res.json()
             })
     }
 
-    getArtist() {
+    getArtist(access_token) {
         let id = this.props.match.params.id;;
         return fetch(`https://api.spotify.com/v1/artists/${id}`, {
             method: 'GET',
             headers: {
-                Authorization: `Bearer ${this.props.access_token}`
+                Authorization: `Bearer ${access_token !== undefined ? access_token: this.state.access_token}`
             }
         })
             .then(res => {
-                if (res.status !== 200) {
-                    refreshAccessToken().then(resP => resP.json().then(resJ => this.props.setAccessToken(resJ.access_token)));
-                    this.getArtist();
-                } else
                     return res.json()
             })
     }
 
-    getRelatedArtist() {
+    getRelatedArtist(access_token) {
         let id = this.props.match.params.id;;
         return fetch(`https://api.spotify.com/v1/artists/${id}/related-artists`, {
             method: 'GET',
             headers: {
-                Authorization: `Bearer ${this.props.access_token}`
+                Authorization: `Bearer ${access_token !== undefined ? access_token: this.state.access_token}`
             }
         })
             .then(res => {
-                if (res.status !== 200) {
-                    refreshAccessToken().then(resP => resP.json().then(resJ => this.props.setAccessToken(resJ.access_token)));
-                    this.getRelatedArtist();
-                } else
                     return res.json()
             })
     }
 
-    getArtistAlbums() {
+    getArtistAlbums(access_token) {
         let id = this.props.match.params.id;;
         return fetch(`https://api.spotify.com/v1/artists/${id}/albums?include_groups=album,single,appears_on&country=VN`, {
             method: 'GET',
             headers: {
-                Authorization: `Bearer ${this.props.access_token}`
+                Authorization: `Bearer ${access_token !== undefined ? access_token: this.state.access_token}`
             }
         })
             .then(res => {
-                if (res.status !== 200) {
-                    refreshAccessToken().then(resP => resP.json().then(resJ => this.props.setAccessToken(resJ.access_token)));
-                    this.getArtistAlbums();
-                } else
                     return res.json()
             })
     }
 
-    getSeveralAlbums(ids) {
+    getSeveralAlbums(ids, access_token) {
         return fetch(`https://api.spotify.com/v1/albums?ids=${ids.join(',')}&market=VN`, {
             method: 'GET',
             headers: {
-                Authorization: `Bearer ${this.props.access_token}`
+                Authorization: `Bearer ${access_token !== undefined ? access_token: this.state.access_token}`
             }
         })
             .then(res => {
-                if (res.status !== 200) {
-                    refreshAccessToken().then(resP => resP.json().then(resJ => this.props.setAccessToken(resJ.access_token)));
-                    this.getSeveralAlbums();
-                } else
                     return res.json()
             })
     }
@@ -124,6 +107,7 @@ class Artist extends React.Component {
     }
 
     playContext(id, indexAlbum, uri, type) {
+        this.props.setPlaying(true);
         const deviceId = localStorage.getItem('deviceId');
         if (type === 'popular') {
             let diff = false;
@@ -132,7 +116,7 @@ class Artist extends React.Component {
             fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
               method: 'PUT',
               headers: {
-                Authorization: `Bearer ${this.props.access_token}`,
+                Authorization: `Bearer ${this.state.access_token}`,
                 'content-type': 'application/json'
               },
               body: JSON.stringify({
@@ -142,7 +126,7 @@ class Artist extends React.Component {
             }): fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
                 method: 'PUT',
                 headers: {
-                  Authorization: `Bearer ${this.props.access_token}`,
+                  Authorization: `Bearer ${this.state.access_token}`,
                   'content-type': 'application/json'
                 },
                 body: JSON.stringify({
@@ -154,12 +138,82 @@ class Artist extends React.Component {
                 if (id === index) {
                   return { ...item, playing: true }
                 }
-                return item;
+                return {...item, playing: false};
               });
+
+              const albums = this.state.albums.map((album, index) => {
+                return {...album, playing: false}
+            });
+
+            const several = this.state.several.map((item, index) => {
+                const tracks = item.map(track => {
+                    return {...track, playing: false};
+                });
+                return tracks;
+                
+            });
         
         
-              this.setState({ tracks: tracks })
+              this.setState({ tracks: tracks, state_changed: true, albums: albums, several: several })
         } else if(type === 'context') {
+            let diff = false;
+            this.props.setContextUri(uri);
+
+            if(uri !== this.props.context_uri) {
+                diff = true;
+            }
+            !diff ? 
+                fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
+                    method: 'PUT',
+                    headers: {
+                        Authorization: `Bearer ${this.state.access_token}`
+                    },
+                    body: JSON.stringify({
+                        'context_uri': uri,
+                        'position_ms': this.props.position_ms
+                    })
+                }): 
+                fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
+                    method: 'PUT',
+                    headers: {
+                        Authorization: `Bearer ${this.state.access_token}`
+                    },
+                    body: JSON.stringify({
+                        'context_uri': uri
+                    })
+                });
+
+            const albums = this.state.albums.map((album, index) => {
+                if(index === id) {
+                    return {...album, playing: true}
+                }
+                return {...album, playing: false}
+            });
+
+            const tracks = this.state.tracks.map((item, index) => {
+                return {...item, playing: false};
+              });
+
+            const several = this.state.several.map((item, index) => {
+                if(index === indexAlbum) {
+                    const tracks = item.map((track, idtrack) => {
+                        if(track.uri === this.props.track_uri || track.uri === this.props.linked_from_uri) {
+                            return {...track, playing: true}
+                        }
+                        return {...track, playing: false};
+                    });
+      
+                    return tracks;
+                }
+                else {
+                    const tracks = item.map(track => {
+                        return {...track, playing: false};
+                    });
+                    return tracks;
+                }
+            });
+
+            this.setState({several: several,albums: albums, state_changed: true, tracks: tracks})
 
         } else {
             let diff = false;
@@ -168,7 +222,7 @@ class Artist extends React.Component {
             fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
                 method: 'PUT',
                 headers: {
-                  Authorization: `Bearer ${this.props.access_token}`,
+                  Authorization: `Bearer ${this.state.access_token}`,
                   'content-type': 'application/json'
                 },
                 body: JSON.stringify({
@@ -178,7 +232,7 @@ class Artist extends React.Component {
             }): fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
                 method: 'PUT',
                 headers: {
-                  Authorization: `Bearer ${this.props.access_token}`,
+                  Authorization: `Bearer ${this.state.access_token}`,
                   'content-type': 'application/json'
                 },
                 body: JSON.stringify({
@@ -192,17 +246,71 @@ class Artist extends React.Component {
                       if(id === idtrack) {
                           return {...track, playing: true}
                       }
-                      return track;
+                      return {...track, playing: false};
                   });
     
                   return tracks;
                 }
-                return item;
+                else {
+                    const tracks = item.map(track => {
+                        return {...track, playing: false};
+                    });
+                    return tracks;
+                }
               });
+
+              const tracks = this.state.tracks.map((item, index) => {
+                return {...item, playing: false};
+              });
+
+              const albums = this.state.albums.map((album, index) => {
+                if(index === indexAlbum) {
+                    return {...album, playing: true}
+                }
+                return {...album, playing: false}
+            });
         
         
-              this.setState({ several: several })
+              this.setState({ several: several, state_changed: true, tracks: tracks, albums: albums })
         }
+    }
+
+    pause() {
+
+
+        this.setState({ state_changed: false });
+        this.props.setPlaying(false);
+
+        const deviceId = localStorage.getItem('deviceId');
+        fetch(`https://api.spotify.com/v1/me/player/pause?device_id=${deviceId}`, {
+            method: 'PUT',
+            headers: {
+                Authorization: `Bearer ${this.state.access_token}`,
+                'content-type': 'application/json'
+            }
+        })
+    }
+
+    mouseMoveAlbum(id) {
+        const items = this.state.albums.map((album, index) => {
+            if(id === index) {
+                return {...album, active: true}
+            }
+            return album
+        })
+
+        this.setState({albums: items})
+    }
+
+    mouseLeaveAlbum(id, indexAlbum) {
+        const items = this.state.albums.map((album, index) => {
+            if(id === index) {
+                return {...album, active: false}
+            }
+            return album
+        })
+
+        this.setState({albums: items})
     }
 
     mouseMove(id, indexAlbum, type) {
@@ -268,30 +376,58 @@ class Artist extends React.Component {
         }
     
       }
-
+      
     componentDidMount() {
-        this.getArtist().then(artist => {
-            this.getTopTracks().then(data => {
-                this.getRelatedArtist().then(related => {
-                    this.getArtistAlbums().then(album => {
-                        this.getSeveralAlbums(album.items.map(item => item.id)).then(res => {
-                            this.setState({ 
-                                tracks: data.tracks.map(track => ({...track, active: false, playing: false})), 
-                                artist: artist, 
-                                related: related.artists, 
-                                next: album.next, 
-                                albums: album.items, 
-                                ids: album.items.map(item => item.id), 
-                                several: res.albums.map(album => album.tracks.items.map(item => ({...item, active: false, playing: false}))) 
-                            })
-                        });
 
+        actions.getAcessToken()
+        .then(result => result.docs.forEach(doc => {
+            this.getArtist(doc.data().access_token).then(artist => {
+                this.getTopTracks(doc.data().access_token).then(data => {
+                    this.getRelatedArtist(doc.data().access_token).then(related => {
+                        this.getArtistAlbums(doc.data().access_token).then(album => {
+                            this.getSeveralAlbums(album.items.map(item => item.id), doc.data().access_token).then(res => {
+                                this.setState({
+                                    access_token: doc.data().access_token,
+                                    tracks: data.tracks.map(track => {
+                                        if(track.uri === this.props.track_uri || track.uri === this.props.linked_from_uri) {
+                                            return {...track, active: false, playing: true}
+                                        }
+                                        return {...track, active: false, playing: false}
+                                    }), 
+                                    artist: artist, 
+                                    related: related.artists, 
+                                    next: album.next, 
+                                    albums: album.items.map(item => {
+                                        if(this.props.context_uri === item.uri) {
+                                            return {...item, active: false, playing: true}
+                                        }
+                                        return {...item, active: false, playing: false}
+                                    }), 
+                                    ids: album.items.map(item => item.id), 
+                                    several: res.albums.map(album => album.tracks.items.map(item => {
+                                        if(item.uri === this.props.track_uri || item.uri === this.props.linked_from_uri) {
+                                            return {...item, active: false, playing: true}
+                                        }
+                                        return {...item, active: false, playing: false}
+                                    })) 
+                                })
+                            });
+    
+                        })
                     })
+    
                 })
+            });
+        }))
 
-            })
-        });
-
+        this.interval = setInterval(() => {
+            actions.getAcessToken()
+            .then(result => result.docs.forEach(doc => {
+                if(doc.data().access_token !== this.state.access_token) {
+                    this.setState({access_token: doc.data().access_token})
+                }
+            }))
+        }, 300000);
     }
 
     componentDidUpdate(prevProps, prevState) {
@@ -306,7 +442,7 @@ class Artist extends React.Component {
                                     artist: artist, 
                                     related: related.artists, 
                                     next: album.next, 
-                                    albums: album.items, 
+                                    albums: album.items.map(item => ({...item, active: false, playing: false})), 
                                     ids: album.items.map(item => item.id), 
                                     several: res.albums.map(album => album.tracks.items.map(item => ({...item, active: false, playing: false}))) 
                                  })
@@ -318,6 +454,14 @@ class Artist extends React.Component {
                 })
             })
         }
+
+        if(this.props.playing !== prevProps.playing) {
+            this.setState({state_changed: this.props.playing})
+        }
+    }
+
+    componentWillUnmount() {
+        clearInterval(this.interval)
     }
 
     render() {
@@ -365,7 +509,7 @@ class Artist extends React.Component {
                             <div className="col-md-12">
                                 <div className="d-flex flex-column flex-wrap justify-content-start">
                                     {
-                                        this.state.expanded ? this.state.tracks.map((track, id) => <div key={id} className="track-item"
+                                        this.state.expanded ? this.state.tracks.map((track, id) => <div key={id} className={`${ track.playing ?'track-item track-item-active': 'track-item'}`}
                                         onMouseMove = {() => this.mouseMove(id, null, 'popular')}
                                         onMouseLeave = {() => this.mouseLeave(id, null, 'popular')}
                                         >
@@ -375,15 +519,25 @@ class Artist extends React.Component {
                                                 </div>
                                                 {
                                                     track.active ?<div className="col-md-1">
-                                                        <FontAwesomeIcon className="mt-1" icon={faPlayCircle} style={{fontSize: '1.5rem', marginLeft: '-7px'}}/>
+                                                        {
+                                                            track.playing && this.state.state_changed ? 
+                                                            <FontAwesomeIcon className="mt-1" icon={faPauseCircle} onClick={() => this.pause()} style={{fontSize: '1.5rem', marginLeft: '-7px'}}/>:
+                                                            <FontAwesomeIcon className="mt-1" icon={faPlayCircle}  onClick={() => this.playContext(id, null, track.uri, 'popular')}  style={{fontSize: '1.5rem', marginLeft: '-7px'}}/>
+                                                        }
                                                     </div> 
-                                                    :<div className="col-md-1 text-white">{id + 1}</div>
+                                                    :<div className="col-md-1 text-white">
+                                                        {
+                                                            track.playing ? 
+                                                            <FontAwesomeIcon className="mt-1" icon={faVolumeUp}  style={{fontSize: '1.2rem', marginLeft: '-7px'}}/>
+                                                            : id + 1
+                                                        }
+                                                    </div>
                                                 }
                                                 <div className="col-md-10 text-white">{track.name}</div>
                                                 <div className="col-md-12 dropdown-divider" style={{ borderColor: '#1a1c1f' }}></div>
                                             </div>
                                         </div>) :
-                                            this.state.tracks.slice(0, this.state.numItem).map((track, id) => <div key={id} className="track-item" 
+                                            this.state.tracks.slice(0, this.state.numItem).map((track, id) => <div key={id} className={`${ track.playing ?'track-item track-item-active': 'track-item'}`} 
                                             onMouseMove = {() => this.mouseMove(id, null, 'popular')}
                                             onMouseLeave = {() => this.mouseLeave(id, null, 'popular')}>
                                                 <div className="row">
@@ -392,9 +546,19 @@ class Artist extends React.Component {
                                                     </div>
                                                     {
                                                         track.active ?<div className="col-md-1">
-                                                            <FontAwesomeIcon className="mt-1" icon={faPlayCircle} style={{fontSize: '1.5rem', marginLeft: '-7px'}}/>
+                                                            {
+                                                                track.playing && this.state.state_changed ? 
+                                                                <FontAwesomeIcon className="mt-1" icon={faPauseCircle} onClick={() => this.pause()}  style={{fontSize: '1.5rem', marginLeft: '-7px'}}/>:
+                                                                <FontAwesomeIcon className="mt-1" icon={faPlayCircle} onClick={() => this.playContext(id, null, track.uri, 'popular')} style={{fontSize: '1.5rem', marginLeft: '-7px'}}/>
+                                                            }
                                                         </div> 
-                                                        :<div className="col-md-1 text-white">{id + 1}</div>
+                                                        :<div className="col-md-1 text-white">
+                                                            {
+                                                                track.playing ? 
+                                                                <FontAwesomeIcon className="mt-1" icon={faVolumeUp}  style={{fontSize: '1.2rem', marginLeft: '-7px'}}/>
+                                                                : id + 1
+                                                            }
+                                                        </div>
                                                     }
                                                     <div className="col-md-10 text-white">{track.name}</div>
                                                     <div className="col-md-12 dropdown-divider" style={{ borderColor: '#1a1c1f' }}></div>
@@ -453,8 +617,27 @@ class Artist extends React.Component {
                                 this.state.albums.map((album, id) => <div key={id} className="row mt-lg-4">
                                     <div className="col-md-12">
                                         <div className="row">
-                                            <div className="col-md-1">
-                                                <img src={`${album.images[0].url}`} style={{ width: 150, height: 150 }} alt="" />
+                                            <div 
+                                            onMouseMove={() => this.mouseMoveAlbum(id)}
+                                            onMouseLeave={() => this.mouseLeaveAlbum(id)}
+                                            className="col-md-1 position-relative">
+                                                <img src={`${album.images[0].url}`} style={{ width: 100, height: 100, zIndex:1 }} alt="" />
+                                                {
+                                                    album.active ? <div className="position-absolute" style={{zIndex: 2, top: '30%', left: '30%'}}>
+                                                        { 
+                                                            album.playing && this.state.state_changed ? 
+                                                            <FontAwesomeIcon icon={faPauseCircle} onClick={() => this.pause()} size="3x" color="#2eb35f"/> :
+                                                            <FontAwesomeIcon icon={faPlayCircle} onClick={() => this.playContext(id, id, album.uri, 'context')} size="3x" color="#2eb35f"/>
+                                                        }
+                                                    </div>: 
+                                                    <div className="position-absolute" style={{zIndex: 2, top: '30%', left: '30%'}}>
+                                                        { 
+                                                            album.playing  ? 
+                                                            <FontAwesomeIcon icon={faVolumeUp} size="3x" color="#2eb35f"/> :
+                                                            null
+                                                        }
+                                                    </div>
+                                                }
                                             </div>
                                             <div className="col-md-4 ml-2">
                                                 <div className="row">
@@ -483,17 +666,27 @@ class Artist extends React.Component {
                                             this.state.several[id].map((track, index) => <div 
                                             onMouseMove = {() => this.mouseMove(index, id, null)}
                                             onMouseLeave = {() => this.mouseLeave(index, id, null)}
-                                            key={index} className="track-item">
+                                            key={index} className={`${ track.playing ?'track-item track-item-active': 'track-item'}`}>
                                                 <div className="row">
                                                     {
                                                     track.active ?<div className="col-md-1">
-                                                        <FontAwesomeIcon className="mt-1 ml-1" icon={faPlayCircle} style={{fontSize: '1.5rem', marginLeft: '-7px'}}/>
+                                                        {
+                                                            track.playing && this.state.state_changed ? 
+                                                            <FontAwesomeIcon className="mt-1 ml-1" icon={faPauseCircle} onClick={() => this.pause()} style={{fontSize: '1.5rem', marginLeft: '-7px'}}/>:
+                                                            <FontAwesomeIcon className="mt-1 ml-1" icon={faPlayCircle} onClick={() => this.playContext(index, id, track.uri, '')} style={{fontSize: '1.5rem', marginLeft: '-7px'}}/>
+                                                        }
                                                     </div> 
-                                                    :<div className="col-md-1 text-white">{index + 1}</div>
+                                                    :<div className="col-md-1 text-white">
+                                                        {
+                                                            track.playing ? 
+                                                            <FontAwesomeIcon className="mt-1 ml-1" icon={faVolumeUp} style={{fontSize: '1.2rem', marginLeft: '-7px'}}/>:
+                                                            index + 1
+                                                        }
+                                                    </div>
                                                     }
-                                                    <div className="col-md-5">{track.name}</div>
-                                                    <div className="col-md-5"></div>
-                                                    <div className="col-md-1">{this.toMinutesSecond(track.duration_ms)}</div>
+                                                    <div className="col-md-5" style={{ color: track.playing ? '#4ca331': ''}}>{track.name}</div>
+                                                    <div className="col-md-5" style={{ color: track.playing ? '#4ca331': ''}}></div>
+                                                    <div className="col-md-1" style={{ color: track.playing ? '#4ca331': ''}}>{this.toMinutesSecond(track.duration_ms)}</div>
                                                 </div>
                                             </div>)
                                         }
@@ -513,15 +706,15 @@ const mapStateToProps = (state, ownProps) => {
         access_token: state.spotify.access_token,
         position_ms: state.spotify.position_ms,
         track_uri: state.spotify.track_uri,
-        linked_from_uri: state.spotify.linked_from_uri
+        linked_from_uri: state.spotify.linked_from_uri,
+        context_uri: state.spotify.context_uri
     }
 }
 
 const mapDispatchToProps = (dispatch, ownProps) => {
     return {
-        setAccessToken: (access_token) => {
-            dispatch({ type: SpotifyConstants.CHANGE_ACCESS_TOKEN, access_token: access_token })
-        }
+        setPlaying : playing => dispatch({type: SpotifyConstants.CHANGE_PLAYING, playing: playing}),
+        setContextUri: context_uri => dispatch({type: SpotifyConstants.CHANGE_CONTEXT_URI, context_uri: context_uri, playing: true})
     }
 }
 

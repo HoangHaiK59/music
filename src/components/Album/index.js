@@ -1,9 +1,9 @@
 import React from 'react';
-import { refreshAccessToken } from '../../helper/token';
 import { SpotifyConstants } from '../../store/constants';
 import { connect } from 'react-redux';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlayCircle, faPauseCircle, faVolumeUp, faClock } from '@fortawesome/free-solid-svg-icons';
+import { actions } from '../../store/actions/spotify.action';
 
 class Album extends React.Component {
     constructor(props) {
@@ -11,26 +11,26 @@ class Album extends React.Component {
 
         this.state = {
             album: null,
-            isRefresh: false,
             items: [],
             id_played: -1,
             next_track: '',
             uri_album: '',
             state_changed: false,
-            duration_album: 0
+            duration_album: 0,
+            access_token: ''
         }
     }
 
-    getAlbum() {
+    getAlbum(access_token) {
         let id = this.props.match.params.id;
         let url = `https://api.spotify.com/v1/albums/${id}`;
 
         return fetch(url, {
             method: 'GET',
             headers: {
-                Authorization: `Bearer ${this.props.access_token}`
+                Authorization: `Bearer ${access_token}`
             }
-        }).then(res => res.status !== 401 ? res.json() : {})
+        }).then(res =>  res.json() )
     }
 
     mouseMove(id) {
@@ -69,7 +69,7 @@ class Album extends React.Component {
         !isUri  ? fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
             method: 'PUT',
             headers: {
-                Authorization: `Bearer ${this.props.access_token}`,
+                Authorization: `Bearer ${this.state.access_token}`,
                 'content-type': 'application/json'
             },
             body: JSON.stringify({
@@ -78,7 +78,7 @@ class Album extends React.Component {
         }): fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
             method: 'PUT',
             headers: {
-                Authorization: `Bearer ${this.props.access_token}`,
+                Authorization: `Bearer ${this.state.access_token}`,
                 'content-type': 'application/json'
             },
             body: JSON.stringify({
@@ -121,7 +121,7 @@ class Album extends React.Component {
             fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
                 method: 'PUT',
                 headers: {
-                    Authorization: `Bearer ${this.props.access_token}`,
+                    Authorization: `Bearer ${this.state.access_token}`,
                     'content-type': 'application/json'
                 },
                 body: JSON.stringify({
@@ -133,7 +133,7 @@ class Album extends React.Component {
             fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
                 method: 'PUT',
                 headers: {
-                    Authorization: `Bearer ${this.props.access_token}`,
+                    Authorization: `Bearer ${this.state.access_token}`,
                     'content-type': 'application/json'
                 },
                 body: JSON.stringify({
@@ -160,18 +160,10 @@ class Album extends React.Component {
         fetch(`https://api.spotify.com/v1/me/player/pause?device_id=${deviceId}`, {
             method: 'PUT',
             headers: {
-                Authorization: `Bearer ${this.props.access_token}`,
+                Authorization: `Bearer ${this.state.access_token}`,
                 'content-type': 'application/json'
             }
-        })//.then(res => res.json().then(json => {
-        //     if(json.status === 401) {
-        //         refreshAccessToken().then(resP => resP.json().then(jsonP => {
-        //             localStorage.setItem('token', jsonP.access_token);
-        //             this.setState({items: items, token: jsonP.access_token})
-        //         }))
-        //     } else 
-        //     this.setState({items: items})
-        // }))
+        })
     }
 
     toMinutesSecond(duration) {
@@ -184,16 +176,14 @@ class Album extends React.Component {
     }
 
     componentDidMount() {
-        this.getAlbum()
+
+        actions.getAcessToken()
+        .then(result => result.docs.forEach(doc => {
+            this.getAlbum(doc.data().access_token)
             .then(album => {
-                if (album === null) {
-                    refreshAccessToken().then(res => res.json().then(resJson => {
-                        this.props.setAccessToken(resJson.access_token);
-                    }))
-                } else {
                     this.setState({
-                        isRefresh: false, album: album, items: album.tracks.items.map(item => {
-                            //return { ...item, isActive: false, isPlaying: false }
+                        access_token: doc.data().access_token,
+                        album: album, items: album.tracks.items.map(item => {
                             if (item.uri === this.props.track_uri || item.uri === this.props.linked_from_uri) {
                                 return { ...item, isActive: false, isPlaying: true }
                             }
@@ -201,26 +191,29 @@ class Album extends React.Component {
                         }), uri_album: album.uri,
                         duration_album: album.tracks.items.reduce((duration, cur) => duration + cur.duration_ms, 0)
                     })
-                }
+                
             })
+        }))
+
+        this.interval = setInterval(() => {
+            actions.getAcessToken()
+            .then(result => result.docs.forEach(doc => {
+                if(doc.data().access_token !== this.state.access_token) {
+                    this.setState({access_token: doc.data().access_token})
+                }
+            }))
+        }, 300000);
+    }
+
+    componentWillUnmount() {
+        clearInterval(this.interval);
     }
 
     componentDidUpdate(prevProps, prevState) {
-        // if (this.state.isRefresh) {
-        //     this.getAlbum()
-        //         .then(album => {
-        //             this.setState({ isRefresh: false, album: album })
-        //         })
-        // }
+
         if (prevProps.track_uri !== this.props.track_uri) {
             this.setState(state => ({
                 items: state.items.map((item, id) => {
-                    // if(id ===0) {
-                    //     if(item.isPlaying === true) {
-                    //         return {...item, isPlaying: false}
-                    //     }
-                    //     return item
-                    // }
                     if (item.uri === prevProps.track_uri || item.uri === prevProps.linked_from_uri) return { ...item, isPlaying: false };
                     else if (item.uri === this.props.track_uri || item.uri === this.props.linked_from_uri) {
                         return { ...item, isPlaying: true };

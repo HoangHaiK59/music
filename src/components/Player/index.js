@@ -1,5 +1,4 @@
 import React from 'react';
-import { refreshAccessToken } from '../../helper/token';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHeart, faDesktop, faMobile, faForward, faBackward, faPlay, faPause, faRandom } from '@fortawesome/free-solid-svg-icons';
 import { Repeat } from 'react-feather';
@@ -219,6 +218,15 @@ class Player extends React.Component {
         }))
         
         this.playerCheckInterval = setInterval(() => this.checkForPlayer(), 1000);
+
+        this.interval = setInterval(() => {
+            actions.getAcessToken()
+            .then(result => result.docs.forEach(doc => {
+                if(doc.data().access_token !== this.state.access_token) {
+                    this.setState({access_token: doc.data().access_token})
+                }
+            }))
+        }, 300000);
     }
 
     componentDidUpdate(prevProps, prevState) {
@@ -233,6 +241,7 @@ class Player extends React.Component {
 
     componentWillUnmount() {
         clearInterval(this.playerCheckInterval);
+        clearInterval(this.interval);
     }
 
     render() {

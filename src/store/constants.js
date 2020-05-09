@@ -8,6 +8,7 @@ export const SpotifyConstants = {
     CHANGE_CONTEXT_URI: 'CHANGE_CONTEXT_URI',
     REPEAT_TRACK: 'REPEAT_TRACK',
     POSITION_MS: 'POSITION_MS',
-    USER: 'USER'
+    USER: 'USER',
+    QUERY: 'QUERY'
   };
   

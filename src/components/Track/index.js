@@ -1,9 +1,9 @@
 import React from 'react';
 import { SpotifyConstants } from '../../store/constants';
 import { connect } from 'react-redux';
-import { refreshAccessToken} from '../../helper/token';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlayCircle, faPauseCircle, faVolumeUp, faClock } from '@fortawesome/free-solid-svg-icons';
+import { actions } from '../../store/actions/spotify.action';
 
 class Track extends React.Component {
     constructor(props) {
@@ -16,20 +16,21 @@ class Track extends React.Component {
             next_track: '',
             uri_album: '',
             state_changed: false,
-            duration_album: 0
+            duration_album: 0,
+            access_token: ''
         };
     }
 
-    getAlbum() {
+    getAlbum(access_token) {
         let id = this.props.match.params.id;
         let url = `https://api.spotify.com/v1/albums/${id}`;
 
         return fetch(url, {
             method: 'GET',
             headers: {
-                Authorization: `Bearer ${this.props.access_token}`
+                Authorization: `Bearer ${access_token}`
             }
-        }).then(res => res.status !== 401 ? res.json() : {})
+        }).then(res =>res.json())
     }
 
     mouseMove(id) {
@@ -68,7 +69,7 @@ class Track extends React.Component {
         !isUri  ? fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
             method: 'PUT',
             headers: {
-                Authorization: `Bearer ${this.props.access_token}`,
+                Authorization: `Bearer ${this.state.access_token}`,
                 'content-type': 'application/json'
             },
             body: JSON.stringify({
@@ -77,7 +78,7 @@ class Track extends React.Component {
         }): fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
             method: 'PUT',
             headers: {
-                Authorization: `Bearer ${this.props.access_token}`,
+                Authorization: `Bearer ${this.state.access_token}`,
                 'content-type': 'application/json'
             },
             body: JSON.stringify({
@@ -120,7 +121,7 @@ class Track extends React.Component {
             fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
                 method: 'PUT',
                 headers: {
-                    Authorization: `Bearer ${this.props.access_token}`,
+                    Authorization: `Bearer ${this.state.access_token}`,
                     'content-type': 'application/json'
                 },
                 body: JSON.stringify({
@@ -132,7 +133,7 @@ class Track extends React.Component {
             fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
                 method: 'PUT',
                 headers: {
-                    Authorization: `Bearer ${this.props.access_token}`,
+                    Authorization: `Bearer ${this.state.access_token}`,
                     'content-type': 'application/json'
                 },
                 body: JSON.stringify({
@@ -159,18 +160,10 @@ class Track extends React.Component {
         fetch(`https://api.spotify.com/v1/me/player/pause?device_id=${deviceId}`, {
             method: 'PUT',
             headers: {
-                Authorization: `Bearer ${this.props.access_token}`,
+                Authorization: `Bearer ${this.state.access_token}`,
                 'content-type': 'application/json'
             }
-        })//.then(res => res.json().then(json => {
-        //     if(json.status === 401) {
-        //         refreshAccessToken().then(resP => resP.json().then(jsonP => {
-        //             localStorage.setItem('token', jsonP.access_token);
-        //             this.setState({items: items, token: jsonP.access_token})
-        //         }))
-        //     } else 
-        //     this.setState({items: items})
-        // }))
+        })
     }
 
     toMinutesSecond(duration) {
@@ -183,14 +176,13 @@ class Track extends React.Component {
     }
 
     componentDidMount() {
-        this.getAlbum()
+
+        actions.getAcessToken()
+        .then(result => result.docs.forEach(doc => {
+            this.getAlbum(doc.data().access_token)
             .then(album => {
-                if (album === null) {
-                    refreshAccessToken().then(res => res.json().then(resJson => {
-                        this.props.setAccessToken(resJson.access_token);
-                    }))
-                } else {
                     this.setState({
+                        access_token: doc.data().access_token,
                         album: album, items: album.tracks.items.map(item => {
                             //return { ...item, isActive: false, isPlaying: false }
                             if (item.uri === this.props.track_uri || item.uri === this.props.linked_from_uri) {
@@ -200,8 +192,21 @@ class Track extends React.Component {
                         }), uri_album: album.uri,
                         duration_album: album.tracks.items.reduce((duration, cur) => duration + cur.duration_ms, 0)
                     })
-                }
             })
+        }))
+
+        this.interval = setInterval(() => {
+            actions.getAcessToken()
+            .then(result => result.docs.forEach(doc => {
+                if(doc.data().access_token !== this.state.access_token) {
+                    this.setState({access_token: doc.data().access_token})
+                }
+            }))
+        }, 300000);
+    }
+
+    componentWillUnmount() {
+        clearInterval(this.interval)
     }
 
     componentDidUpdate(prevProps, prevState) {
@@ -297,13 +302,13 @@ class Track extends React.Component {
                                                         {
                                                             item.isActive ? <div className="col-sm-1 col-xs-1">
                                                                 {
-                                                                    (item.isPlaying && this.props.playing) ? <FontAwesomeIcon icon={faPauseCircle} onClick={() => this.pauseTrack()} color="#c4c4be" size="2x" /> :
-                                                                        <FontAwesomeIcon icon={faPlayCircle} onClick={() => this.playTrack(id, item.uri)} color="#c4c4be" size="2x" />
+                                                                    (item.isPlaying && this.props.playing) ? <FontAwesomeIcon icon={faPauseCircle} onClick={() => this.pauseTrack()} color="#c4c4be" style={{marginLeft: '5px',fontSize: '1.5rem'}} /> :
+                                                                        <FontAwesomeIcon icon={faPlayCircle} onClick={() => this.playTrack(id, item.uri)} color="#c4c4be" style={{marginLeft: '5px',fontSize: '1.5rem'}} />
                                                                 }
                                                             </div>
                                                                 : <div className="col-sm-1 col-xs-1">
                                                                     {
-                                                                        item.isPlaying ? <FontAwesomeIcon icon={faVolumeUp} color="#c4c4be" /> : null
+                                                                        item.isPlaying ? <FontAwesomeIcon icon={faVolumeUp} color="#c4c4be" style={{marginLeft: '5px',fontSize: '1.2rem'}} /> : null
                                                                     }
                                                                 </div>
                                                         }
@@ -325,7 +330,6 @@ class Track extends React.Component {
                                                             }
                                                         </div>
                                                     </div>
-                                                    <div className="dropdown-divider" style={{ borderColor: '#1a1c1f' }}></div>
                                                 </div>
 
                                                 )

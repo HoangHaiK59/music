@@ -2,6 +2,7 @@ import React from "react";
 import { connect } from "react-redux";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSpotify } from '@fortawesome/free-brands-svg-icons';
+import { actions } from "../../store/actions/spotify.action";
 
 class Authen extends React.Component {
   constructor(props) {
@@ -30,7 +31,7 @@ class Authen extends React.Component {
     // }), '_parent',"width=600, height=500")
     localStorage.removeItem('token');
     localStorage.removeItem('refresh_token');
-   
+    this.props.remove();
   }
 
   render() {
@@ -58,7 +59,7 @@ const mapState = state => ({
 });
 
 const mapProps = dispatch => ({
-
+    remove: () => dispatch(actions.logout())
 });
 
 export default connect(

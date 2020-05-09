@@ -1,5 +1,4 @@
 import React from 'react';
-import { refreshAccessToken } from '../../helper/token';
 import './playlist.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlayCircle, faHeart, faPauseCircle, faVolumeUp, faClock, faCalendarAlt, faEllipsisH } from '@fortawesome/free-solid-svg-icons';
@@ -9,6 +8,7 @@ import { SpotifyConstants } from '../../store/constants';
 import moment from 'moment';
 //import ContextMenu from '../Context/Menu';
 import {ContextMenu, MenuItem, ContextMenuTrigger} from 'react-contextmenu';
+import { actions } from '../../store/actions/spotify.action';
 
 const attributes = {
     className: 'custom-root',
@@ -36,21 +36,22 @@ class Playlist extends React.Component {
             next_track: '',
             state_changed: false,
             duration_playlist: 0,
-            toggle: false
+            toggle: false,
+            access_token: ''
         }
 
         this.ID = 'menu';
 
     }
 
-    getPlaylist() {
+    getPlaylist(access_token) {
         let id = this.props.match.params.id;
         let url = `https://api.spotify.com/v1/playlists/${id}`;
 
         return fetch(url, {
             method: 'GET',
             headers: {
-                Authorization: `Bearer ${this.props.access_token}`
+                Authorization: `Bearer ${access_token}`
             }
         }).then(res => res.json());
     }
@@ -84,7 +85,7 @@ class Playlist extends React.Component {
         fetch(`https://api.spotify.com/v1/me/player/queue?device_id=${deviceId}&uri=${data.uri}`, {
             method: 'POST',
             headers: {
-                Authorization: `Bearer ${this.props.access_token}`
+                Authorization: `Bearer ${this.state.access_token}`
             }
         })
     }
@@ -130,7 +131,7 @@ class Playlist extends React.Component {
         !isUri ? fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
             method: 'PUT',
             headers: {
-                Authorization: `Bearer ${this.props.access_token}`,
+                Authorization: `Bearer ${this.state.access_token}`,
                 'content-type': 'application/json'
             },
             body: JSON.stringify({
@@ -139,7 +140,7 @@ class Playlist extends React.Component {
         }) : fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
             method: 'PUT',
             headers: {
-                Authorization: `Bearer ${this.props.access_token}`,
+                Authorization: `Bearer ${this.state.access_token}`,
                 'content-type': 'application/json'
             },
             body: JSON.stringify({
@@ -178,12 +179,12 @@ class Playlist extends React.Component {
             return { ...item, isPlaying: false, contextmenu: false }
         })
 
-        this.setState(state => ({ items: items, state_changed: !state.state_changed }));
+        this.setState(state => ({ items: items, state_changed: true }));
         if (this.props.track_uri !== uri && this.props.linked_from_uri !== uri) {
             fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
                 method: 'PUT',
                 headers: {
-                    Authorization: `Bearer ${this.props.access_token}`,
+                    Authorization: `Bearer ${this.state.access_token}`,
                     'content-type': 'application/json'
                 },
                 body: JSON.stringify({
@@ -195,7 +196,7 @@ class Playlist extends React.Component {
             fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
                 method: 'PUT',
                 headers: {
-                    Authorization: `Bearer ${this.props.access_token}`,
+                    Authorization: `Bearer ${this.state.access_token}`,
                     'content-type': 'application/json'
                 },
                 body: JSON.stringify({
@@ -217,13 +218,13 @@ class Playlist extends React.Component {
         //     return item
         // })
 
-        this.setState(state => ({ state_changed: !state.state_changed }));
+        this.setState(state => ({ state_changed: false }));
 
         const deviceId = localStorage.getItem('deviceId');
         fetch(`https://api.spotify.com/v1/me/player/pause?device_id=${deviceId}`, {
             method: 'PUT',
             headers: {
-                Authorization: `Bearer ${this.props.access_token}`,
+                Authorization: `Bearer ${this.state.access_token}`,
                 'content-type': 'application/json'
             }
         })//.then(res => res.json().then(json => {
@@ -238,14 +239,14 @@ class Playlist extends React.Component {
     }
 
     componentDidMount() {
-        this.getPlaylist()
+
+        actions.getAcessToken()
+        .then(result => result.docs.forEach(doc => {
+
+            this.getPlaylist(doc.data().access_token)
             .then(data => {
-                if (data.error) {
-                    refreshAccessToken().then(res => res.json().then(resJson => {
-                        this.props.setAccessToken(resJson.access_token);
-                    }))
-                } else {
                     this.setState({
+                        access_token: doc.data().access_token,
                         data: data, items: data.tracks.items.map((item) => {
                             if (item.track.uri === this.props.track_uri || item.track.uri === this.props.linked_from_uri) {
                                 return { ...item, isActive: false, isPlaying: true, contextmenu: true }
@@ -256,30 +257,24 @@ class Playlist extends React.Component {
                         uri_playlist: data.uri,
                         duration_playlist: data.tracks.items.reduce((duration, cur) => duration + cur.track.duration_ms, 0)
                     })
-                }
+                
             });
 
+        }));
+
+        this.interval = setInterval(() => {
+            actions.getAcessToken()
+            .then(result => result.docs.forEach(doc => {
+                if(doc.data().access_token !== this.state.access_token) {
+                    this.setState({access_token: doc.data().access_token})
+                }
+            }))
+        }, 300000);
 
     }
 
     componentDidUpdate(prevProps, prevState) {
-        // if(prevProps.access_token !== this.props.access_token) {
-        //     this.getPlaylist()
-        //     .then(data => {
-        //             this.setState({ data: data, items: data.tracks.items.map((item) => {
-        //                 if(item.track.uri === this.props.track_uri) {
-        //                     return {...item, isActive: false, isPlaying: true}
-        //                 }
-        //                 return {...item, isActive: false, isPlaying: false}
-        //             }), 
-        //             uris:  data.tracks.items.map(item => item.track.uri),
-        //             uri_playlist: data.uri
-        //         })
-        //     });
-        // }
-        // if(!this.props.playing) {
 
-        // }
         if (prevProps.playing !== this.props.playing) {
             this.setState(state => ({ state_changed: this.props.playing }))
         }
@@ -302,6 +297,10 @@ class Playlist extends React.Component {
             }))
         }
 
+    }
+
+    componentWillUnmount() {
+        clearInterval(this.interval);
     }
 
     render() {
@@ -410,9 +409,9 @@ class Playlist extends React.Component {
                                                             </div>
                                                         </div>
                                                         <div className="col-sm-2 col-xs-2" style={{ color: item.isPlaying ? '#4ca331': '' }}>
-                                                            {
+                                                            <Link to={`/artist/${item.track.artists[0].id}`} style={{ textDecoration: 'none', color: item.isPlaying ? '#4ca331': '#c4c4be' }}>{
                                                                 item.track.artists[0].name
-                                                            }
+                                                            }</Link>
                                                         </div>
                                                         <div className="col-sm-2 col-xs-2">
                                                             <Link style={{ textDecoration: 'none', color: item.isPlaying ? '#4ca331': '#c4c4be' }} to={`/album/${item.track.album.id}`}>                                                           {

@@ -9,7 +9,8 @@ const initState = {
   access_token: '',
   context_uri: '',
   repeat_track: false,
-  position_ms: 0
+  position_ms: 0,
+  query: ''
 };
 
 export const SpotifyReducer = (state = initState, action) => {
@@ -18,8 +19,8 @@ export const SpotifyReducer = (state = initState, action) => {
       return { ...state, authenticate: true };
     case SpotifyConstants.LOGOUT:
       return { ...state, authenticate: false };
-    case SpotifyConstants.REFRESH_TOKEN:
-      return {...state, isRefresh: !state.isRefresh};
+    case SpotifyConstants.QUERY:
+      return {...state, query: action.query};
     case SpotifyConstants.CHANGE_TRACK_URI:
       return {...state, track_uri: action.track_uri, linked_from_uri: action.linked_from_uri, repeat_track: false};
     case SpotifyConstants.CHANGE_PLAYING:

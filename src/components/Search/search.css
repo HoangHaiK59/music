@@ -50,4 +50,9 @@
   .mb-customize {
     margin-bottom: 3.5rem !important;
   }
+
+  .icon {
+    font-size: 1.5rem;
+    margin-left: 5px;
+  }
   

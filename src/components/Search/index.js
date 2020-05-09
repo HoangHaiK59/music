@@ -1,11 +1,11 @@
 import React from "react";
 import "./search.css";
-import { refreshAccessToken } from "../../helper/token";
 import { SpotifyConstants } from "../../store/constants";
 import { connect } from "react-redux";
 import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlayCircle, faPauseCircle, faVolumeUp } from '@fortawesome/free-solid-svg-icons';
+import { actions } from "../../store/actions/spotify.action";
 
 
 class Search extends React.Component {
@@ -19,26 +19,17 @@ class Search extends React.Component {
       artists: null,
       tracks: null,
       playlists: null,
-      id_played: -1
+      id_played: -1,
+      access_token: ''
     };
-    this.handleChange = this.handleChange.bind(this);
-    this.handleClick = this.handleClick.bind(this);
   }
 
-  handleChange = event => {
-    this.setState(event.target.value.length > 0 ? { query: event.target.value } : { query: event.target.value, data: null });
-  };
-
-  handleClick = event => {
-    // this.setState(state => this.setState({toggle: !state.toggle}))
-  };
-
-  search() {
-    let url = `https://api.spotify.com/v1/search?q=${this.state.query}&market=VN&type=album,artist,playlist,track`
+  search(access_token) {
+    let url = `https://api.spotify.com/v1/search?q=${this.props.query}&market=VN&type=album,artist,playlist,track`
     return fetch(url,
       {
         headers: {
-          Authorization: 'Bearer ' + this.props.access_token
+          Authorization: `Bearer ${access_token !== undefined ? access_token: this.state.access_token}` 
         }
       },
     ).then(res => res.status === 200 ? res.json() : null)
@@ -148,7 +139,7 @@ class Search extends React.Component {
     !diff ? fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
       method: 'PUT',
       headers: {
-        Authorization: `Bearer ${this.props.access_token}`,
+        Authorization: `Bearer ${this.state.access_token}`,
         'content-type': 'application/json'
       },
       body: JSON.stringify(type !== 3  ? {
@@ -161,7 +152,7 @@ class Search extends React.Component {
     }): fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
       method: 'PUT',
       headers: {
-        Authorization: `Bearer ${this.props.access_token}`,
+        Authorization: `Bearer ${this.state.access_token}`,
         'content-type': 'application/json'
       },
       body: JSON.stringify(type !== 3  ? {
@@ -225,7 +216,7 @@ class Search extends React.Component {
     fetch(`https://api.spotify.com/v1/me/player/pause?device_id=${deviceId}`, {
       method: 'PUT',
       headers: {
-        Authorization: `Bearer ${this.props.access_token}`,
+        Authorization: `Bearer ${this.state.access_token}`,
         'content-type': 'application/json'
       }
     })
@@ -233,33 +224,49 @@ class Search extends React.Component {
 
   componentDidMount() {
 
+    actions.getAcessToken().then(result => result.docs.forEach(doc => {
+      if(this.props.query !== '') {
+        this.search(doc.data().access_token)
+        .then(data => {
+            this.setState({
+              access_token: doc.data().access_token,
+              albums: { ...data.albums, items: data.albums.items.map(item => ({ ...item, active: false, playing: false })) },
+              artists: { ...data.artists, items: data.artists.items.map(item => ({ ...item, active: false, playing: false })) },
+              tracks: { ...data.tracks, items: data.tracks.items.map(item => ({ ...item, active: false, playing: false })) },
+              playlists: { ...data.playlists, items: data.playlists.items.map(item => ({ ...item, active: false, playing: false })) }
+            })
+        }
+        )
+      } else {
+        this.setState({access_token: doc.data().access_token})
+      }
+    }));
+
+    this.interval = setInterval(() => {
+      actions.getAcessToken()
+      .then(result => result.docs.forEach(doc => {
+          if(doc.data().access_token !== this.state.access_token) {
+              this.setState({access_token: doc.data().access_token})
+          }
+      }))
+  }, 300000);
   }
 
   componentWillUnmount() {
-    // document.removeEventListener('click', this.handleClick);
-    // document
-    // .getElementById("query")
-    // .removeEventListener("click", this.handleClick);
+    clearInterval(this.interval);
   }
 
   componentDidUpdate(prevProps, prevState) {
 
-    if ((prevState.query !== this.state.query && this.state.query !== '')) {
+    if ((prevProps.query !== this.props.query && this.props.query !== '')) {
       this.search()
         .then(data => {
-          if (data === null) {
-            refreshAccessToken()
-              .then(res => res.json().then(resJson => {
-                this.props.setAccessToken(resJson.access_token)
-              }))
-          } else {
             this.setState({
               albums: { ...data.albums, items: data.albums.items.map(item => ({ ...item, active: false, playing: false })) },
               artists: { ...data.artists, items: data.artists.items.map(item => ({ ...item, active: false, playing: false })) },
               tracks: { ...data.tracks, items: data.tracks.items.map(item => ({ ...item, active: false, playing: false })) },
               playlists: { ...data.playlists, items: data.playlists.items.map(item => ({ ...item, active: false, playing: false })) }
             })
-          }
         }
         )
     }
@@ -269,23 +276,7 @@ class Search extends React.Component {
   render() {
     return (
       <div className="container-fluid" style={{ minHeight: '100%', backgroundColor: '#0f1424' }} >
-        <div className="container-wrapper" >
-          {/* {this.state.toggle && <input onClick={this.handleClick} style={{width: '90%'}}
-            id="query"
-            type="text"
-            onChange={this.handleChange}
-            value={this.state.query}/>} */}
-          <div id="bloodhound">
-            <input
-              className="typeahead"
-              onClick={this.handleClick}
-              id="query"
-              type="text"
-              onChange={this.handleChange}
-              value={this.state.query}
-              placeholder="Search Track, Artist..."
-            />
-          </div>
+        <div className="row" style={{height: '50px'}}>
         </div>
         {
           (this.state.albums && this.state.playlists) && <div className="container-fluid">
@@ -308,12 +299,12 @@ class Search extends React.Component {
                           <img className="position-absolute" src={item.images['1'] ? item.images['1'].url : '/dvd.png'} alt="..." style={{ width: 64, height: 64, zIndex: 1 }} />
                           {
                             item.playing ?
-                              <div className="position-absolute" style={{ top: '25%', left: '30%', zIndex: 2 }}><FontAwesomeIcon onClick={() => this.pause()} icon={faPauseCircle} size="2x" color="white" /></div> :
-                              <div className="position-absolute" style={{ top: '25%', left: '30%', zIndex: 2 }}><FontAwesomeIcon onClick={() => this.playContext(id, item.uri, 1)} icon={faPlayCircle} size="2x" color="white" /></div>
+                              <div className="position-absolute" style={{ top: '25%', left: '30%', zIndex: 2 }}><FontAwesomeIcon onClick={() => this.pause()} icon={faPauseCircle} className="icon" color="white" /></div> :
+                              <div className="position-absolute" style={{ top: '25%', left: '30%', zIndex: 2 }}><FontAwesomeIcon onClick={() => this.playContext(id, item.uri, 1)} icon={faPlayCircle} className="icon" color="white" /></div>
                           }
                         </div> : <div className="col-md-4 position-relative" onMouseMove={() => this.mouseMove(id, 1)} onMouseLeave={() => this.mouseLeave(id, 1)}>
                             <img className="position-absolute" src={item.images['1'] ? item.images['1'].url : '/dvd.png'} alt="..." style={{ width: 64, height: 64, zIndex: 1 }} />
-                            {item.playing && <div className="position-absolute" style={{ top: '25%', left: '30%', zIndex: 2 }}><FontAwesomeIcon icon={faVolumeUp} size="2x" color="white" /></div>}
+                            {item.playing && <div className="position-absolute" style={{ top: '25%', left: '30%', zIndex: 2 }}><FontAwesomeIcon icon={faVolumeUp} className="icon" color="white" /></div>}
                           </div>}
                         <div className="col-md-8">
                           <div className="row">
@@ -349,13 +340,13 @@ class Search extends React.Component {
                         {item.active ? <div className="col-md-4 position-relative" onMouseMove={() => this.mouseMove(id, 2)} onMouseLeave={() => this.mouseLeave(id, 2)}>
                           <img className="rounded-circle position-absolute" src={item.images['1'] ? item.images['1'].url : '/user.png'} alt="..." style={{ width: 64, height: 64, zIndex: 1 }} />
                           {
-                            item.playing ? <div className="position-absolute" style={{ top: '25%', left: '30%', zIndex: 2 }}><FontAwesomeIcon onClick={() => this.pause()} icon={faPauseCircle} size="2x" color="white" /></div> :
-                              <div className="position-absolute" style={{ top: '25%', left: '30%', zIndex: 2 }}><FontAwesomeIcon onClick={() => this.playContext(id, item.uri, 2)} icon={faPlayCircle} size="2x" color="white" /></div>
+                            item.playing ? <div className="position-absolute" style={{ top: '25%', left: '30%', zIndex: 2 }}><FontAwesomeIcon onClick={() => this.pause()} icon={faPauseCircle} className="icon" color="white" /></div> :
+                              <div className="position-absolute" style={{ top: '25%', left: '30%', zIndex: 2 }}><FontAwesomeIcon onClick={() => this.playContext(id, item.uri, 2)} icon={faPlayCircle} className="icon" color="white" /></div>
                           }
                         </div> :
                           <div className="col-md-4 position-relative" onMouseMove={() => this.mouseMove(id, 2)} onMouseLeave={() => this.mouseLeave(id, 2)}>
                             <img className="rounded-circle position-absolute" src={item.images['1'] ? item.images['1'].url : '/user.png'} alt="..." style={{ width: 64, height: 64 }} />
-                            {item.playing && <div className="position-absolute" style={{ top: '25%', left: '30%', zIndex: 2 }}><FontAwesomeIcon icon={faVolumeUp} size="2x" color="white" /></div>}
+                            {item.playing && <div className="position-absolute" style={{ top: '25%', left: '30%', zIndex: 2 }}><FontAwesomeIcon icon={faVolumeUp} className="icon" color="white" /></div>}
                           </div>
                         }
                         <div className="col-md-8">
@@ -386,13 +377,13 @@ class Search extends React.Component {
                           item.active ? <div className="col-md-4 position-relative" onMouseMove={() => this.mouseMove(id, 3)} onMouseLeave={() => this.mouseLeave(id, 3)}>
                             <img className="position-absolute" src={item.album.images['1'] ? item.album.images['1'].url : '/dvd.png'} alt="..." style={{ width: 64, height: 64, zIndex: 1 }} />
                             {
-                              item.playing ? <div className="position-absolute" style={{ top: '25%', left: '30%', zIndex: 2 }}><FontAwesomeIcon onClick={() => this.pause()} icon={faPauseCircle} size="2x" color="white" /></div> :
-                                <div className="position-absolute" style={{ top: '25%', left: '30%', zIndex: 2 }}><FontAwesomeIcon onClick={() => this.playContext(id, item.uri, 3)} icon={faPlayCircle} size="2x" color="white" /></div>
+                              item.playing ? <div className="position-absolute" style={{ top: '25%', left: '30%', zIndex: 2 }}><FontAwesomeIcon onClick={() => this.pause()} icon={faPauseCircle} className="icon" color="white" /></div> :
+                                <div className="position-absolute" style={{ top: '25%', left: '30%', zIndex: 2 }}><FontAwesomeIcon onClick={() => this.playContext(id, item.uri, 3)} icon={faPlayCircle} className="icon" color="white" /></div>
                             }
                           </div> :
                             <div className="col-md-4 position-relative" onMouseMove={() => this.mouseMove(id, 3)} onMouseLeave={() => this.mouseLeave(id, 3)}>
                               <img className="position-absolute" src={item.album.images['1'] ? item.album.images['1'].url : '/dvd.png'} alt="..." style={{ width: 64, height: 64, zIndex: 1 }} />
-                              {item.playing && <div className="position-absolute" style={{ top: '25%', left: '30%', zIndex: 2 }}><FontAwesomeIcon icon={faVolumeUp} size="2x" color="white" /></div>}
+                              {item.playing && <div className="position-absolute" style={{ top: '25%', left: '30%', zIndex: 2 }}><FontAwesomeIcon icon={faVolumeUp} className="icon" color="white" /></div>}
                             </div>
                         }
                         <div className="col-md-8">
@@ -432,13 +423,13 @@ class Search extends React.Component {
                           item.active ? <div className="col-md-4 position-relative" onMouseMove={() => this.mouseMove(id, 4)} onMouseLeave={() => this.mouseLeave(id, 4)}>
                             <img className="position-absolute" src={item.images['0'] ? item.images['0'].url : '/dvd.png'} alt="..." style={{ width: 64, height: 64, zIndex: 1 }} />
                             {
-                              item.playing ? <div className="position-absolute" style={{ top: '25%', left: '30%', zIndex: 2 }}><FontAwesomeIcon onClick={() => this.pause()} icon={faPauseCircle} size="2x" color="white" /></div> :
-                                <div className="position-absolute" style={{ top: '25%', left: '30%', zIndex: 2 }}><FontAwesomeIcon onClick={() => this.playContext(id, item.uri, 4)} icon={faPlayCircle} size="2x" color="white" /></div>
+                              item.playing ? <div className="position-absolute" style={{ top: '25%', left: '30%', zIndex: 2 }}><FontAwesomeIcon onClick={() => this.pause()} icon={faPauseCircle} className="icon" color="white" /></div> :
+                                <div className="position-absolute" style={{ top: '25%', left: '30%', zIndex: 2 }}><FontAwesomeIcon onClick={() => this.playContext(id, item.uri, 4)} icon={faPlayCircle} className="icon" color="white" /></div>
                             }
                           </div> :
                             <div className="col-md-4 position-relative" onMouseMove={() => this.mouseMove(id, 4)} onMouseLeave={() => this.mouseLeave(id, 4)}>
                               <img className="position-absolute" src={item.images['0'] ? item.images['0'].url : '/dvd.png'} alt="..." style={{ width: 64, height: 64, zIndex: 1 }} />
-                              {item.playing && <div className="position-absolute" style={{ top: '25%', left: '30%', zIndex: 2 }}><FontAwesomeIcon icon={faVolumeUp} size="2x" color="white" /></div>}
+                              {item.playing && <div className="position-absolute" style={{ top: '25%', left: '30%', zIndex: 2 }}><FontAwesomeIcon icon={faVolumeUp} className="icon" color="white" /></div>}
                             </div>
                         }
                         <div className="col-md-8">
@@ -470,7 +461,8 @@ const mapStateToProps = (state, ownProps) => {
     context_uri: state.spotify.context_uri,
     track_uri: state.spotify.track_uri,
     linked_from_uri: state.spotify.linked_from_uri,
-    position_ms: state.spotify.position_ms
+    position_ms: state.spotify.position_ms,
+    query: state.spotify.query
   }
 }
 
