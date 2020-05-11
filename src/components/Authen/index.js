@@ -31,7 +31,7 @@ class Authen extends React.Component {
     // }), '_parent',"width=600, height=500")
     localStorage.removeItem('token');
     localStorage.removeItem('refresh_token');
-    this.props.remove();
+    //this.props.remove();
   }
 
   render() {

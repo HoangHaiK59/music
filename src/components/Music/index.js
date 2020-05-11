@@ -171,16 +171,23 @@ class Music extends React.Component {
                   <div className="d-flex flex-column justify-content-start">
                     <div className="container position-relative" 
                     onMouseMove = {() => this.mouseMove(id)}
-                    onMouseLeave = {() => this.mouseLeave(id)}>
+                    onMouseLeave = {() => this.mouseLeave(id)}
+                    >
                       <img src={item.images['0'].url} style={{width: 150, height:150}} alt=""/>
                       {
                         item.active ? 
                           item.playing && this.state.state_changed ? 
-                          <FontAwesomeIcon className="position-absolute" onClick={() => this.pause()} icon={faPauseCircle} size="3x" color="#2eb35f" style={{top: '30%', left: '40%', zIndex: 1}}/>:
-                          <FontAwesomeIcon className="position-absolute" onClick={() => this.playContext(id, item.uri)} icon={faPlayCircle} size="3x" color="#2eb35f" style={{top: '30%', left: '40%', zIndex: 1}}/>
+                          <div className="position-absolute" style={{width: 150, height:150, top: 0, left:'7%', zIndex: 1, backgroundColor: 'rgba(2,2,2,.5)'}} >
+                            <FontAwesomeIcon className="position-absolute" style={{top: '30%', left: '35%'}} onClick={() => this.pause()} icon={faPauseCircle} size="3x" color="#2eb35f" />
+                          </div>:
+                          <div className="position-absolute" style={{width: 150, height:150, top: 0, left:'7%', zIndex: 1, backgroundColor: 'rgba(2,2,2,.5)'}} >
+                            <FontAwesomeIcon className="position-absolute" style={{top: '30%', left: '35%'}} onClick={() => this.playContext(id, item.uri)} icon={faPlayCircle} size="3x" color="#2eb35f" />
+                          </div>
                           :
                           item.playing ? 
-                          <FontAwesomeIcon className="position-absolute" icon={faVolumeUp} size="3x" color="#2eb35f" style={{top: '30%', left: '40%', zIndex: 1}}/>: null
+                          <div className="position-absolute" style={{width: 150, height:150, top: 0, left:'7%', zIndex: 1, backgroundColor: 'rgba(2,2,2,.5)'}} >
+                            <FontAwesomeIcon className="position-absolute" icon={faVolumeUp} size="3x" color="#2eb35f" style={{top: '30%', left: '35%'}}/>
+                          </div>: null
                       }
                     </div>
                     <div className="container-fluid">

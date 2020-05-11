@@ -1,25 +1,12 @@
 import { SpotifyConfig } from "../config";
 import firebase from './firebase';
 
-let refreshToken = localStorage.getItem('refresh_token');
-
-export const refreshAccessToken = () => {
-    const encodeCredentials = btoa(`${SpotifyConfig.client_id}:${SpotifyConfig.client_secret}`);
-    return fetch('https://accounts.spotify.com/api/token', {
-        method: 'POST',
-        body: `grant_type=refresh_token&refresh_token=${refreshToken}`,
-        headers: {
-            'Authorization': `Basic ${new Buffer.from(`${encodeCredentials}`)}`,
-            'Content-Type': 'application/x-www-form-urlencoded'
-        }
-    })
-}
-
-let authenticate;
 
 function isAuthenticate() {
 
-    firebase.firestore().collection('authen')
+    let authenticate, refresh;
+
+    let final = firebase.firestore().collection('authen')
     .get()
     .then(result => {
         result.docs.forEach(doc => {
@@ -31,14 +18,46 @@ function isAuthenticate() {
         })
         .then(res => {
             if(res.status !== 200) {
-                return null
+                const encodeCredentials = btoa(`${SpotifyConfig.client_id}:${SpotifyConfig.client_secret}`);
+                refresh = fetch('https://accounts.spotify.com/api/token', {
+                    method: 'POST',
+                    body: `grant_type=refresh_token&refresh_token=${doc.data().refresh_token}`,
+                    headers: {
+                        'Authorization': `Basic ${new Buffer.from(`${encodeCredentials}`)}`,
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    }
+                }).then(data => {
+                    if(data.status !== 200) {
+                        return undefined
+                    } else {
+                        return data.json()
+                    }
+                });
+                console.log(refresh !== undefined? 'true': false)
+                if(refresh !== undefined) {
+                    refresh.then(resp => {
+                        firebase.firestore().collection('authen')
+                        .get()
+                        .then(all => all.docs.forEach(doc => {
+                            firebase.firestore().collection('authen').doc(doc.id)
+                            .update({access_token: resp.access_token})
+                        }))
+                        isAuthenticate();
+                    })
+                } else {
+                    return undefined;
+                }
             }
             else return res.json()
             
         } )
-
-     })});
-     return authenticate !== null ? true : false
+     })
+     return authenticate === undefined ? false:  true
+    });
+    return final.then(fi => {
+        if(fi) return fi;
+        else return undefined
+    }) !== undefined ? true: false
 };
 
 export default isAuthenticate;

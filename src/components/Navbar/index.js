@@ -69,9 +69,9 @@ class Navbar extends React.Component {
         return (
             <div className="container-fluid">
                 {
-                    (this.props.isShow && this.state.user) && <div className="fixed-top-wrap">
+                    (this.props.isShow && this.state.user !== null) && <div className="fixed-top-wrap">
                         <div className="row">
-                            <div className="col-md-2">
+                            <div className="col-md-2 w-50">
 
                                 <div className="d-flex flex-row justify-content-start">
                                     <Link className="mt-1" to="/home"><FontAwesomeIcon title="Spotify" icon={faSpotify} size="2x" color="green" /></Link>
@@ -88,7 +88,7 @@ class Navbar extends React.Component {
                                 </div>
 
                             </div>
-                            <div className="col-md-10">
+                            <div className="col-md-10 w-50">
                                 <div className="d-flex flex-row flex-wrap justify-content-end">
                                     <Dropdown title={this.state.user.display_name}>
                                         <Dropdown.Toggle className="text-white btn-dropdown" variant="" id="dropdown-basic">

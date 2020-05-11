@@ -1,7 +1,6 @@
 import React from 'react';
 import { SpotifyConstants } from '../../store/constants';
 import { connect } from 'react-redux';
-import { refreshAccessToken } from '../../helper/token';
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlayCircle, faPauseCircle, faVolumeUp, faClock } from '@fortawesome/free-solid-svg-icons';

@@ -43,7 +43,7 @@
   }
 
   .item:hover {
-    background-color: rgb(48, 50, 51) !important;
+    background-color: rgba(48, 50, 51,.5) !important;
     cursor: pointer;
   }
 

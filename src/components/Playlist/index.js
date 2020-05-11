@@ -364,13 +364,13 @@ class Playlist extends React.Component {
                                         <div className="d-flex flex-column justify-content-start">
                                             <div className="track-header">
                                                 <div className="row" style={{ height: '100%' }}>
-                                                    <div className="col-sm-1 col-xs-1" style={{ color: '#8c8382' }}></div>
-                                                    <div className="col-sm-3 col-xs-3" style={{ color: '#8c8382', marginLeft: '-70px' }}>Title</div>
-                                                    <div className="col-sm-2 col-xs-2" style={{ color: '#8c8382' }}>Artist</div>
-                                                    <div className="col-sm-2 col-xs-2" style={{ color: '#8c8382' }}>Album</div>
-                                                    <div className="col-sm-2 col-xs-2" style={{ color: '#8c8382' }}><FontAwesomeIcon icon={faCalendarAlt} /></div>
-                                                    <div className="col-sm-1 col-xs-1"></div>
-                                                    <div className="col-sm-1 col-xs-1" style={{ color: '#8c8382' }}><FontAwesomeIcon icon={faClock} /></div>
+                                                    <div className="col-sm-1 col-xs-1 w-25" style={{ color: '#8c8382' }}></div>
+                                                    <div className="col-sm-3 col-xs-3 w-25" style={{ color: '#8c8382', marginLeft: '-70px' }}>Title</div>
+                                                    <div className="col-sm-2 col-xs-2 w-25" style={{ color: '#8c8382' }}>Artist</div>
+                                                    <div className="col-sm-2 col-xs-2 w-25" style={{ color: '#8c8382' }}>Album</div>
+                                                    <div className="col-sm-2 col-xs-2 w-25" style={{ color: '#8c8382' }}><FontAwesomeIcon icon={faCalendarAlt} /></div>
+                                                    <div className="col-sm-1 col-xs-1 w-25"></div>
+                                                    <div className="col-sm-1 col-xs-1 w-25" style={{ color: '#8c8382' }}><FontAwesomeIcon icon={faClock} /></div>
                                                 </div>
                                             </div>
                                         </div>
@@ -389,44 +389,44 @@ class Playlist extends React.Component {
                                                     >
                                                     <div className="row" style={{ height: '100%', paddingTop: '5px' }}>
                                                         {
-                                                            item.isActive ? <div className="col-sm-1 col-xs-1">
+                                                            item.isActive ? <div className="col-sm-1 col-xs-1 w-25">
                                                                 {
                                                                     ((item.isPlaying && this.state.state_changed)) ? <FontAwesomeIcon icon={faPauseCircle} onClick={() => this.pauseTrack()} color="#c4c4be" style={{marginLeft: '5px',fontSize: '1.5rem'}} /> :
                                                                         <FontAwesomeIcon icon={faPlayCircle} onClick={() => this.playTrack(id, item.track.uri)} color="#c4c4be" style={{marginLeft: '5px',fontSize: '1.5rem'}} />
                                                                 }
                                                             </div>
-                                                                : <div className="col-sm-1 col-xs-1">
+                                                                : <div className="col-sm-1 col-xs-1 w-25">
                                                                     {
                                                                         (item.isPlaying) ? <FontAwesomeIcon icon={faVolumeUp} color="#c4c4be" style={{marginLeft: '5px',fontSize: '1rem'}} /> : null
                                                                     }
                                                                 </div>
                                                         }
-                                                        <div className="col-sm-3 col-xs-3" style={{ marginLeft: '-70px', color: item.isPlaying ? '#4ca331': '' }} >
+                                                        <div className="col-sm-3 col-xs-3 w-25" style={{ marginLeft: '-70px', color: item.isPlaying ? '#4ca331': '' }} >
                                                             <div className="row">
-                                                                <div className="col-sm-11 col-xs-11">
+                                                                <div className="col-sm-11 col-xs-11 w-25">
                                                                     {item.track.name}
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                        <div className="col-sm-2 col-xs-2" style={{ color: item.isPlaying ? '#4ca331': '' }}>
+                                                        <div className="col-sm-2 col-xs-2 w-25" style={{ color: item.isPlaying ? '#4ca331': '' }}>
                                                             <Link to={`/artist/${item.track.artists[0].id}`} style={{ textDecoration: 'none', color: item.isPlaying ? '#4ca331': '#c4c4be' }}>{
                                                                 item.track.artists[0].name
                                                             }</Link>
                                                         </div>
-                                                        <div className="col-sm-2 col-xs-2">
+                                                        <div className="col-sm-2 col-xs-2 w-25">
                                                             <Link style={{ textDecoration: 'none', color: item.isPlaying ? '#4ca331': '#c4c4be' }} to={`/album/${item.track.album.id}`}>                                                           {
                                                                 item.track.album.name
                                                             }</Link>
                                                         </div>
-                                                        <div className="col-sm-2 col-xs-2" style={{ color: item.isPlaying ? '#4ca331': '' }}>
+                                                        <div className="col-sm-2 col-xs-2 w-25" style={{ color: item.isPlaying ? '#4ca331': '' }}>
                                                             {
                                                                 moment(item.added_at).fromNow()
                                                             }
                                                         </div>
-                                                        <div className="col-sm-1 col-xs-1">
+                                                        <div className="col-sm-1 col-xs-1 w-25">
                                                             <ContextMenuTrigger holdToDisplay={1} id={this.state.toggle ? this.ID: ''}>{item.contextmenu && <FontAwesomeIcon onClick={this.handleClick.bind(this)} icon={faEllipsisH} />}</ContextMenuTrigger>
                                                         </div>
-                                                        <div className="col-sm-1 col-xs-1" style={{ color: item.isPlaying ? '#4ca331': '' }}>
+                                                        <div className="col-sm-1 col-xs-1 w-25" style={{ color: item.isPlaying ? '#4ca331': '' }}>
                                                             {
                                                                 this.toMinutesSecond(item.track.duration_ms)
                                                             }
