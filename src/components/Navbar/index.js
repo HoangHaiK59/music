@@ -2,7 +2,7 @@ import React from 'react';
 import { SpotifyConstants } from '../../store/constants';
 import { connect } from 'react-redux';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUser } from '@fortawesome/free-solid-svg-icons';
+import { faUser, faSearch } from '@fortawesome/free-solid-svg-icons';
 import { faSpotify } from '@fortawesome/free-brands-svg-icons';
 import { Dropdown, Button } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
@@ -75,6 +75,7 @@ class Navbar extends React.Component {
 
                                 <div className="d-flex flex-row justify-content-start">
                                     <Link className="mt-1" to="/home"><FontAwesomeIcon title="Spotify" icon={faSpotify} size="2x" color="green" /></Link>
+                                    <FontAwesomeIcon icon={faSearch} className="position-absolute" style={{top: '40%', left: '23%', zIndex: 1}}/>
                                     <input
                                         style={{ height: '2rem', width: '13rem', marginTop: -7, border: 'none' }}
                                         className="ml-5"

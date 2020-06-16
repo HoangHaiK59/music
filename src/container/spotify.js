@@ -28,7 +28,7 @@ const SpotifyContainer = (props) => {
                 <PrivateRoute exact path="/artist/:id" component={Artist}/>
             </Switch>
         {
-           isAuthenticate() ? <Route render={(props) => <Player {...props} />}/>: null 
+            isAuthenticate() ? <Route render={(props) => <Player {...props} />}/>: null 
         }
         </div>
     )

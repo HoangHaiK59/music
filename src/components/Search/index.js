@@ -283,9 +283,11 @@ class Search extends React.Component {
             <div className="row">
               <div className="col-md-12">
                 {
-                  this.state.albums && <h4>Albums</h4>
+                  (this.state.albums && this.state.albums.items.length > 0) && <h4>Albums</h4>
                 }
-                <div className="dropdown-divider" style={{ borderColor: '#272729' }}></div>
+                {
+                  this.state.albums && this.state.albums.items.length > 0 && <div className="dropdown-divider" style={{ borderColor: '#272729' }}></div>
+                }
               </div>
             </div>
             <div className="row">
@@ -299,12 +301,12 @@ class Search extends React.Component {
                           <img className="position-absolute" src={item.images['1'] ? item.images['1'].url : '/dvd.png'} alt="..." style={{ width: 64, height: 64, zIndex: 1 }} />
                           {
                             item.playing ?
-                              <div className="position-absolute" style={{ top: '0', left: '16%',width: 64, height: 64, backgroundColor: 'rgba(2,2,2,.5)', zIndex: 2, }}><FontAwesomeIcon style={{ top: '25%', left: '20%'}} onClick={() => this.pause()} icon={faPauseCircle} className="icon position-absolute" color="#2eb35f" /></div> :
-                              <div className="position-absolute" style={{ top: '0', left: '16%',width: 64, height: 64, backgroundColor: 'rgba(2,2,2,.5)', zIndex: 2 }}><FontAwesomeIcon style={{ top: '25%', left: '20%'}} onClick={() => this.playContext(id, item.uri, 1)} icon={faPlayCircle} className="icon position-absolute" color="#2eb35f" /></div>
+                              <div className="position-absolute" style={{ top: '0', left: '16%',width: 66, height: 64, backgroundColor: 'rgba(2,2,2,.5)', zIndex: 2, }}><FontAwesomeIcon style={{ top: '25%', left: '20%'}} onClick={() => this.pause()} icon={faPauseCircle} className="icon position-absolute" color="#2eb35f" /></div> :
+                              <div className="position-absolute" style={{ top: '0', left: '16%',width: 66, height: 64, backgroundColor: 'rgba(2,2,2,.5)', zIndex: 2 }}><FontAwesomeIcon style={{ top: '25%', left: '20%'}} onClick={() => this.playContext(id, item.uri, 1)} icon={faPlayCircle} className="icon position-absolute" color="#2eb35f" /></div>
                           }
                         </div> : <div className="col-md-4 w-25 position-relative" onMouseMove={() => this.mouseMove(id, 1)} onMouseLeave={() => this.mouseLeave(id, 1)}>
                             <img className="position-absolute" src={item.images['1'] ? item.images['1'].url : '/dvd.png'} alt="..." style={{ width: 64, height: 64, zIndex: 1 }} />
-                            {item.playing && <div className="position-absolute" style={{ top: '0', left: '16%',width: 64, height: 64, backgroundColor: 'rgba(2,2,2,.5)', zIndex: 2 }}><FontAwesomeIcon style={{ top: '25%', left: '20%'}} icon={faVolumeUp} className="icon position-absolute" color="#2eb35f" /></div>}
+                            {item.playing && <div className="position-absolute" style={{ top: '0', left: '16%',width: 66, height: 64, backgroundColor: 'rgba(2,2,2,.5)', zIndex: 2 }}><FontAwesomeIcon style={{ top: '25%', left: '20%'}} icon={faVolumeUp} className="icon position-absolute" color="#2eb35f" /></div>}
                           </div>}
                         <div className="col-md-8 w-75">
                           <div className="row">
@@ -326,9 +328,11 @@ class Search extends React.Component {
             <div className="row">
               <div className="col-md-12">
                 {
-                  this.state.artists && <h4>Artists</h4>
+                  this.state.artists && this.state.artists.items.length > 0 && <h4>Artists</h4>
                 }
-                <div className="dropdown-divider" style={{ borderColor: '#272729' }}></div>
+                {
+                  this.state.artists && this.state.artists.items.length > 0 && <div className="dropdown-divider" style={{ borderColor: '#272729' }}></div>
+                }
               </div>
             </div>
             <div className="row">
@@ -340,13 +344,13 @@ class Search extends React.Component {
                         {item.active ? <div className="col-md-4 w-25 position-relative" onMouseMove={() => this.mouseMove(id, 2)} onMouseLeave={() => this.mouseLeave(id, 2)}>
                           <img className="rounded-circle position-absolute" src={item.images['1'] ? item.images['1'].url : '/user.png'} alt="..." style={{ width: 64, height: 64, zIndex: 1 }} />
                           {
-                            item.playing ? <div className="position-absolute" style={{ top: '0', left: '16%',width: 64, height: 64, backgroundColor: 'rgba(2,2,2,.5)', zIndex: 2 }}><FontAwesomeIcon style={{ top: '25%', left: '20%'}} onClick={() => this.pause()} icon={faPauseCircle} className="icon position-absolute" color="#2eb35f" /></div> :
-                              <div className="position-absolute" style={{ top: '0', left: '16%',width: 64, height: 64, backgroundColor: 'rgba(2,2,2,.5)', zIndex: 2 }}><FontAwesomeIcon style={{ top: '25%', left: '20%'}} onClick={() => this.playContext(id, item.uri, 2)} icon={faPlayCircle} className="icon position-absolute" color="#2eb35f" /></div>
+                            item.playing ? <div className="position-absolute rounded-circle" style={{ top: '0', left: '16%',width: 67, height: 64, backgroundColor: 'rgba(2,2,2,.5)', zIndex: 2 }}><FontAwesomeIcon style={{ top: '25%', left: '20%'}} onClick={() => this.pause()} icon={faPauseCircle} className="icon position-absolute" color="#2eb35f" /></div> :
+                              <div className="position-absolute rounded-circle" style={{ top: '0', left: '16%',width: 67, height: 64, backgroundColor: 'rgba(2,2,2,.5)', zIndex: 2 }}><FontAwesomeIcon style={{ top: '25%', left: '20%'}} onClick={() => this.playContext(id, item.uri, 2)} icon={faPlayCircle} className="icon position-absolute" color="#2eb35f" /></div>
                           }
                         </div> :
                           <div className="col-md-4 w-25 position-relative" onMouseMove={() => this.mouseMove(id, 2)} onMouseLeave={() => this.mouseLeave(id, 2)}>
                             <img className="rounded-circle position-absolute" src={item.images['1'] ? item.images['1'].url : '/user.png'} alt="..." style={{ width: 64, height: 64 }} />
-                            {item.playing && <div className="position-absolute" style={{ top: '0', left: '16%',width: 64, height: 64, backgroundColor: 'rgba(2,2,2,.5)', zIndex: 2 }}><FontAwesomeIcon style={{ top: '25%', left: '20%'}} icon={faVolumeUp} className="icon position-absolute" color="#2eb35f" /></div>}
+                            {item.playing && <div className="position-absolute rounded-circle" style={{ top: '0', left: '16%',width: 67, height: 64, backgroundColor: 'rgba(2,2,2,.5)', zIndex: 2 }}><FontAwesomeIcon style={{ top: '25%', left: '20%'}} icon={faVolumeUp} className="icon position-absolute" color="#2eb35f" /></div>}
                           </div>
                         }
                         <div className="col-md-8 w-75">
@@ -362,9 +366,11 @@ class Search extends React.Component {
             <div className="row">
               <div className="col-md-12">
                 {
-                  this.state.tracks && <h4>Tracks</h4>
+                  this.state.tracks && this.state.tracks.items.length> 0 && <h4>Tracks</h4>
                 }
-                <div className="dropdown-divider" style={{ borderColor: '#272729' }}></div>
+                {
+                  this.state.tracks && this.state.tracks.items.length> 0 && <div className="dropdown-divider" style={{ borderColor: '#272729' }}></div>
+                }
               </div>
             </div>
             <div className="row">
@@ -377,13 +383,13 @@ class Search extends React.Component {
                           item.active ? <div className="col-md-4 w-25 position-relative" onMouseMove={() => this.mouseMove(id, 3)} onMouseLeave={() => this.mouseLeave(id, 3)}>
                             <img className="position-absolute" src={item.album.images['1'] ? item.album.images['1'].url : '/dvd.png'} alt="..." style={{ width: 64, height: 64, zIndex: 1 }} />
                             {
-                              item.playing ? <div className="position-absolute" style={{ top: '0', left: '16%',width: 64, height: 64, backgroundColor: 'rgba(2,2,2,.5)', zIndex: 2 }}><FontAwesomeIcon style={{ top: '25%', left: '20%'}} onClick={() => this.pause()} icon={faPauseCircle} className="icon position-absolute" color="#2eb35f" /></div> :
-                                <div className="position-absolute" style={{ top: '0', left: '16%',width: 64, height: 64, backgroundColor: 'rgba(2,2,2,.5)', zIndex: 2 }}><FontAwesomeIcon style={{ top: '25%', left: '20%'}} onClick={() => this.playContext(id, item.uri, 3)} icon={faPlayCircle} className="icon position-absolute" color="#2eb35f" /></div>
+                              item.playing ? <div className="position-absolute" style={{ top: '0', left: '16%',width: 66, height: 64, backgroundColor: 'rgba(2,2,2,.5)', zIndex: 2 }}><FontAwesomeIcon style={{ top: '25%', left: '20%'}} onClick={() => this.pause()} icon={faPauseCircle} className="icon position-absolute" color="#2eb35f" /></div> :
+                                <div className="position-absolute" style={{ top: '0', left: '16%',width: 64, height: 66, backgroundColor: 'rgba(2,2,2,.5)', zIndex: 2 }}><FontAwesomeIcon style={{ top: '25%', left: '20%'}} onClick={() => this.playContext(id, item.uri, 3)} icon={faPlayCircle} className="icon position-absolute" color="#2eb35f" /></div>
                             }
                           </div> :
                             <div className="col-md-4 w-25 position-relative" onMouseMove={() => this.mouseMove(id, 3)} onMouseLeave={() => this.mouseLeave(id, 3)}>
                               <img className="position-absolute" src={item.album.images['1'] ? item.album.images['1'].url : '/dvd.png'} alt="..." style={{ width: 64, height: 64, zIndex: 1 }} />
-                              {item.playing && <div className="position-absolute" style={{ top: '0', left: '16%',width: 64, height: 64, backgroundColor: 'rgba(2,2,2,.5)', zIndex: 2 }}><FontAwesomeIcon style={{ top: '25%', left: '20%'}} icon={faVolumeUp} className="icon position-absolute" color="#2eb35f" /></div>}
+                              {item.playing && <div className="position-absolute" style={{ top: '0', left: '16%',width: 66, height: 64, backgroundColor: 'rgba(2,2,2,.5)', zIndex: 2 }}><FontAwesomeIcon style={{ top: '25%', left: '20%'}} icon={faVolumeUp} className="icon position-absolute" color="#2eb35f" /></div>}
                             </div>
                         }
                         <div className="col-md-8 w-75">
@@ -407,9 +413,11 @@ class Search extends React.Component {
             <div className="row">
               <div className="col-md-12">
                 {
-                  this.state.playlists && <h4>Playlists</h4>
+                  this.state.playlists && this.state.playlists.items.length> 0 && <h4>Playlists</h4>
                 }
-                <div className="dropdown-divider" style={{ borderColor: '#272729' }}></div>
+                {
+                  this.state.playlists && this.state.playlists.items.length> 0 && <div className="dropdown-divider" style={{ borderColor: '#272729' }}></div>
+                }
               </div>
             </div>
             <div className="row mb-customize">
@@ -423,13 +431,13 @@ class Search extends React.Component {
                           item.active ? <div className="col-md-4 w-25 position-relative" onMouseMove={() => this.mouseMove(id, 4)} onMouseLeave={() => this.mouseLeave(id, 4)}>
                             <img className="position-absolute" src={item.images['0'] ? item.images['0'].url : '/dvd.png'} alt="..." style={{ width: 64, height: 64, zIndex: 1 }} />
                             {
-                              item.playing ? <div className="position-absolute" style={{ top: '0', left: '16%',width: 64, height: 64, backgroundColor: 'rgba(2,2,2,.5)', zIndex: 2 }}><FontAwesomeIcon style={{ top: '25%', left: '20%'}} onClick={() => this.pause()} icon={faPauseCircle} className="icon position-absolute" color="#2eb35f" /></div> :
-                                <div className="position-absolute" style={{ top: '0', left: '16%',width: 64, height: 64, backgroundColor: 'rgba(2,2,2,.5)', zIndex: 2 }}><FontAwesomeIcon style={{ top: '25%', left: '20%'}} onClick={() => this.playContext(id, item.uri, 4)} icon={faPlayCircle} className="icon position-absolute" color="#2eb35f" /></div>
+                              item.playing ? <div className="position-absolute" style={{ top: '0', left: '16%',width: 66, height: 64, backgroundColor: 'rgba(2,2,2,.5)', zIndex: 2 }}><FontAwesomeIcon style={{ top: '25%', left: '20%'}} onClick={() => this.pause()} icon={faPauseCircle} className="icon position-absolute" color="#2eb35f" /></div> :
+                                <div className="position-absolute" style={{ top: '0', left: '16%',width: 64, height: 66, backgroundColor: 'rgba(2,2,2,.5)', zIndex: 2 }}><FontAwesomeIcon style={{ top: '25%', left: '20%'}} onClick={() => this.playContext(id, item.uri, 4)} icon={faPlayCircle} className="icon position-absolute" color="#2eb35f" /></div>
                             }
                           </div> :
                             <div className="col-md-4 w-25 position-relative" onMouseMove={() => this.mouseMove(id, 4)} onMouseLeave={() => this.mouseLeave(id, 4)}>
                               <img className="position-absolute" src={item.images['0'] ? item.images['0'].url : '/dvd.png'} alt="..." style={{ width: 64, height: 64, zIndex: 1 }} />
-                              {item.playing && <div className="position-absolute" style={{ top: '0', left: '16%',width: 64, height: 64, backgroundColor: 'rgba(2,2,2,.5)', zIndex: 2 }}><FontAwesomeIcon style={{ top: '25%', left: '20%'}} icon={faVolumeUp} className="icon position-absolute" color="#2eb35f" /></div>}
+                              {item.playing && <div className="position-absolute" style={{ top: '0', left: '16%',width: 66, height: 64, backgroundColor: 'rgba(2,2,2,.5)', zIndex: 2 }}><FontAwesomeIcon style={{ top: '25%', left: '20%'}} icon={faVolumeUp} className="icon position-absolute" color="#2eb35f" /></div>}
                             </div>
                         }
                         <div className="col-md-8 w-75">

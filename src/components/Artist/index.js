@@ -513,18 +513,18 @@ class Artist extends React.Component {
                                         onMouseLeave = {() => this.mouseLeave(id, null, 'popular')}
                                         >
                                             <div className="row">
-                                                <div className="col-md-1">
+                                                <div className="col-md-1 w-25">
                                                     <img src={`${track.album.images[2].url}`} style={{ width: 32, height: 32 }} alt="" />
                                                 </div>
                                                 {
-                                                    track.active ?<div className="col-md-1">
+                                                    track.active ?<div className="col-md-1 w-25">
                                                         {
                                                             track.playing && this.state.state_changed ? 
                                                             <FontAwesomeIcon className="mt-1" icon={faPauseCircle} onClick={() => this.pause()} style={{fontSize: '1.5rem', marginLeft: '-7px'}}/>:
                                                             <FontAwesomeIcon className="mt-1" icon={faPlayCircle}  onClick={() => this.playContext(id, null, track.uri, 'popular')}  style={{fontSize: '1.5rem', marginLeft: '-7px'}}/>
                                                         }
                                                     </div> 
-                                                    :<div className="col-md-1 text-white">
+                                                    :<div className="col-md-1 text-white w-25">
                                                         {
                                                             track.playing ? 
                                                             <FontAwesomeIcon className="mt-1" icon={faVolumeUp}  style={{fontSize: '1.2rem', marginLeft: '-7px'}}/>
@@ -532,7 +532,7 @@ class Artist extends React.Component {
                                                         }
                                                     </div>
                                                 }
-                                                <div className="col-md-10 text-white">{track.name}</div>
+                                                <div className="col-md-10 w-50 text-white">{track.name}</div>
                                                 <div className="col-md-12 dropdown-divider" style={{ borderColor: '#1a1c1f' }}></div>
                                             </div>
                                         </div>) :
@@ -540,18 +540,18 @@ class Artist extends React.Component {
                                             onMouseMove = {() => this.mouseMove(id, null, 'popular')}
                                             onMouseLeave = {() => this.mouseLeave(id, null, 'popular')}>
                                                 <div className="row">
-                                                    <div className="col-md-1">
+                                                    <div className="col-md-1 w-25">
                                                         <img src={`${track.album.images[2].url}`} style={{ width: 32, height: 32 }} alt="" />
                                                     </div>
                                                     {
-                                                        track.active ?<div className="col-md-1">
+                                                        track.active ?<div className="col-md-1 w-25">
                                                             {
                                                                 track.playing && this.state.state_changed ? 
                                                                 <FontAwesomeIcon className="mt-1" icon={faPauseCircle} onClick={() => this.pause()}  style={{fontSize: '1.5rem', marginLeft: '-7px'}}/>:
                                                                 <FontAwesomeIcon className="mt-1" icon={faPlayCircle} onClick={() => this.playContext(id, null, track.uri, 'popular')} style={{fontSize: '1.5rem', marginLeft: '-7px'}}/>
                                                             }
                                                         </div> 
-                                                        :<div className="col-md-1 text-white">
+                                                        :<div className="col-md-1 text-white w-25">
                                                             {
                                                                 track.playing ? 
                                                                 <FontAwesomeIcon className="mt-1" icon={faVolumeUp}  style={{fontSize: '1.2rem', marginLeft: '-7px'}}/>
@@ -559,7 +559,7 @@ class Artist extends React.Component {
                                                             }
                                                         </div>
                                                     }
-                                                    <div className="col-md-10 text-white">{track.name}</div>
+                                                    <div className="col-md-10 w-50 text-white">{track.name}</div>
                                                     <div className="col-md-12 dropdown-divider" style={{ borderColor: '#1a1c1f' }}></div>
                                                 </div>
                                             </div>)
@@ -585,20 +585,20 @@ class Artist extends React.Component {
                                     {
                                         this.state.expanded ? this.state.related.slice(0, 9).map((artist, id) => <div key={id} className="artist-item mt-1">
                                             <div className="row">
-                                                <div className="col-md-1">
+                                                <div className="col-md-1 w-25">
                                                     <img className="rounded-circle" src={`${artist.images[0].url}`} style={{ width: 45, height: 45 }} alt="" />
                                                 </div>
-                                                <div className="ml-2 col-md-3 text-white">
+                                                <div className="ml-2 col-md-3 w-50 text-white">
                                                     <Link to={`/artist/${artist.id}`} className="text-white" style={{ textDecoration: 'none' }}>{artist.name}</Link>
                                                 </div>
                                             </div>
                                         </div>) :
                                             this.state.related.slice(0, this.state.numItem).map((artist, id) => <div key={id} className="artist-item mt-1">
                                                 <div className="row">
-                                                    <div className="col-md-1">
+                                                    <div className="col-md-1 w-25">
                                                         <img className="rounded-circle" src={`${artist.images[0].url}`} style={{ width: 45, height: 45 }} alt="" />
                                                     </div>
-                                                    <div className="ml-2 col-md-3 text-white">
+                                                    <div className="ml-2 col-md-3 w-50 text-white">
                                                         <Link to={`/artist/${artist.id}`} className="text-white" style={{ textDecoration: 'none' }}>{artist.name}</Link>
                                                     </div>
                                                 </div>
@@ -668,14 +668,14 @@ class Artist extends React.Component {
                                             key={index} className={`${ track.playing ?'track-item track-item-active': 'track-item'}`}>
                                                 <div className="row">
                                                     {
-                                                    track.active ?<div className="col-md-1">
+                                                    track.active ?<div className="col-md-1 w-25">
                                                         {
                                                             track.playing && this.state.state_changed ? 
                                                             <FontAwesomeIcon className="mt-1 ml-1" icon={faPauseCircle} onClick={() => this.pause()} style={{fontSize: '1.5rem', marginLeft: '-7px'}}/>:
                                                             <FontAwesomeIcon className="mt-1 ml-1" icon={faPlayCircle} onClick={() => this.playContext(index, id, track.uri, '')} style={{fontSize: '1.5rem', marginLeft: '-7px'}}/>
                                                         }
                                                     </div> 
-                                                    :<div className="col-md-1 text-white">
+                                                    :<div className="col-md-1 w-25 text-white">
                                                         {
                                                             track.playing ? 
                                                             <FontAwesomeIcon className="mt-1 ml-1" icon={faVolumeUp} style={{fontSize: '1.2rem', marginLeft: '-7px'}}/>:
@@ -683,9 +683,9 @@ class Artist extends React.Component {
                                                         }
                                                     </div>
                                                     }
-                                                    <div className="col-md-5" style={{ color: track.playing ? '#4ca331': ''}}>{track.name}</div>
-                                                    <div className="col-md-5" style={{ color: track.playing ? '#4ca331': ''}}></div>
-                                                    <div className="col-md-1" style={{ color: track.playing ? '#4ca331': ''}}>{this.toMinutesSecond(track.duration_ms)}</div>
+                                                    <div className="col-md-5 w-25" style={{ color: track.playing ? '#4ca331': ''}}>{track.name}</div>
+                                                    <div className="col-md-5 w-25" style={{ color: track.playing ? '#4ca331': ''}}></div>
+                                                    <div className="col-md-1 w-25" style={{ color: track.playing ? '#4ca331': ''}}>{this.toMinutesSecond(track.duration_ms)}</div>
                                                 </div>
                                             </div>)
                                         }

@@ -308,7 +308,7 @@ class Playlist extends React.Component {
             <div className="container-fluid">
                 <div className="row" style={{ height: '50px' }}></div>
                 {
-                    (this.state.data && this.state.items) && <div className="row">
+                    (this.state.data && this.state.items) && <div className="row" >
                         <div className="col-md-12">
                             <div className="container-fluid">
                                 <div className="row">

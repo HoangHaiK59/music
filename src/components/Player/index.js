@@ -29,8 +29,11 @@ class Player extends React.Component {
             device_info: null,
             track_uri: '',
             activePlaybackbar: false,
-            access_token: ''
+            access_token: '',
+            isProgress: false
         };
+
+        this.handleProgressChange = this.handleProgressChange.bind(this);
     }
 
 
@@ -142,9 +145,26 @@ class Player extends React.Component {
     }
 
     onPlayClick() {
-        this.player.togglePlay();
+        
         let playing = this.state.playing;
-        this.setState(state => ({ playing: !state.playing }))
+        
+        if(this.state.isProgress && !this.state.playing) {
+            fetch(`https://api.spotify.com/v1/me/player/play?device_id=${this.state.deviceId}`, {
+                method: 'PUT',
+                headers: {
+                    Authorization: `Bearer ${this.state.access_token}`,
+                    'content-type': 'application/json'
+                },
+                body: JSON.stringify({
+                    'uris': [this.state.track_uri],
+                    'position_ms': this.state.position
+                })
+            })
+        } else {
+            this.player.togglePlay();
+        }
+
+        this.setState(state => ({ playing: !state.playing, isProgress: false }))
         this.props.setChangePlaying(!playing);
     }
 
@@ -171,6 +191,26 @@ class Player extends React.Component {
                 "play": false,
             }),
         });
+    }
+
+    handleProgressChange = (position) => {
+        const deviceId = localStorage.getItem('deviceId');
+        if(this.state.playing) {
+            fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
+                method: 'PUT',
+                headers: {
+                    Authorization: `Bearer ${this.state.access_token}`,
+                    'content-type': 'application/json'
+                },
+                body: JSON.stringify({
+                    'uris': [this.state.track_uri],
+                    'position_ms': position
+                })
+            })
+        } else {
+            this.setState({position: position,isProgress : true})
+        }
+
     }
 
     onMouseMove() {
@@ -250,22 +290,22 @@ class Player extends React.Component {
                 <div className="container-fluid position-relative">
                     {
                         (this.state.track && this.state.track.album && this.state.device_info) && <div className="row">
-                            <div className="col-md-4">
+                            <div className="col-md-4 w-50">
                                 <div className="row">
-                                    <div className="col-md-2">
+                                    <div className="col-md-2 w-25">
                                         <img src={this.state.track.album !== null ? this.state.track.album.images['2'].url : '/public/dvd.png'} alt="" />
                                     </div>
-                                    <div className="col-md-3">
+                                    <div className="col-md-3 w-75">
                                         <div className="row">
-                                            <div className="col-md-12">
+                                            <div className="col-md-12 w-50">
                                                 <p>{this.state.track.name}</p>
                                             </div>
-                                            <div className="col-md-12">
+                                            <div className="col-md-12 w-25">
                                                 <p>{this.state.track.artists.map((artist) => artist.name).join(',')}</p>
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="col-md-3">
+                                    <div className="col-md-3 w-25">
                                         <div className="row">
                                             <div className="col-md-1">
                                                 <FontAwesomeIcon icon={faHeart} color="white" />
@@ -280,44 +320,45 @@ class Player extends React.Component {
                                     </div>
                                 </div>
                             </div>
-                            <div className="col-md-4">
+                            <div className="col-md-4 w-50">
                                 <div className="row">
-                                    <div className="col-md-12">
+                                    <div className="col-md-12 w-50">
                                         <div className="row">
-                                            <div className="col-md-2"></div>
+                                            <div className="col-md-3"></div>
                                             <div className="col-md-6">
                                                 <div className="row">
-                                                    <div className="col-md-2">
+                                                    <div className="col-md-2 w-25">
                                                         <i className="ft-repeat"></i>
                                                     </div>
-                                                    <div className="col-md-2">
+                                                    <div className="col-md-2 w-25">
                                                         <FontAwesomeIcon icon={faBackward} onClick={() => this.onPrevClick()} color="white" />
                                                     </div>
-                                                    <div className="col-md-2">
+                                                    <div className="col-md-2 w-25">
                                                         {
                                                             this.state.playing ? <FontAwesomeIcon icon={faPause} onClick={() => this.onPlayClick()} color="white" /> :
                                                                 <FontAwesomeIcon icon={faPlay} onClick={() => this.onPlayClick()} color="white" />
                                                         }
                                                     </div>
-                                                    <div className="col-md-2">
+                                                    <div className="col-md-2 w-25">
                                                         <FontAwesomeIcon icon={faForward} onClick={() => this.onNextClick()} color="white" />
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="col-md-12">
+                                    <div className="col-md-12 w-100">
                                         <Progress
                                             duration={this.state.duration}
                                             id={this.state.id}
                                             position={this.state.position}
                                             context_uri={this.props.context_uri}
                                             repeat_track={this.props.repeat_track}
+                                            handleProgressChange = {this.handleProgressChange}
                                         />
                                     </div>
                                 </div>
                             </div>
-                            <div className="col-md-4">
+                            <div className="col-md-4 w-50">
                                 <div className="row">
                                     <div className="col-md-4">Volumn</div>
                                 </div>

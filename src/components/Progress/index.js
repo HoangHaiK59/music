@@ -55,25 +55,23 @@ class Progress extends React.Component {
     }
 
     handlePosition(position) {
-        let timelineWidth = this.timeline.offsetWidth - this.handle.offsetWidth;
-        let handleLeft = position - this.timeline.offsetLeft;
-        console.log('timeline.offsetWidth ',this.timeline.offsetWidth);
-        console.log('timelineWidth ',timelineWidth);
-        console.log('handleLeft ',handleLeft);
-        console.log('timeline.offsetLeft ',this.timeline.offsetLeft);
-        console.log('position ',position);
-        if(handleLeft >= 0 && handleLeft <= timelineWidth) {
-           // this.handle.style.marginLeft = handleLeft + 'px';
-           this.handle.style.transform = 'translateX(-50%)';
-            //this.setState({remain: })
+        console.log('goto')
+        let timeline =  this.timeline.getBoundingClientRect();
+
+        let percent ;
+        if(position < timeline.right) {
+            percent = ((position - timeline.left)/ timeline.width).toFixed(2);
         }
-        if(handleLeft < 0) {
-            this.handle.style.marginLeft = '0px';
-        }
-        if(handleLeft > timelineWidth) {
-           // this.handle.style.marginLeft = timelineWidth + 'px';
-           this.handle.style.left = '10%';
-        }
+
+        let duration = ((percent * this.props.duration).toFixed(0) - ((percent * this.props.duration).toFixed(0) % 1000));
+
+        let width = (duration / this.props.duration) * 100;
+
+        let remain = 100 - ((duration / this.props.duration) * 100);
+
+        this.props.handleProgressChange(duration);
+
+        this.setState({duration: duration, width: width, remain: remain});
     }
 
     mouseMove(event) {
@@ -91,7 +89,10 @@ class Progress extends React.Component {
     };
 
     shouldComponentUpdate(nextProps, nextState) {
-        if( nextProps.id !== this.props.id || nextProps.playing || nextProps.context_uri !== this.props.context_uri || (nextProps.playing === false && nextProps.id !== this.props.id) ) {
+        if( nextProps.id !== this.props.id || nextProps.playing || 
+            nextProps.context_uri !== this.props.context_uri || 
+            (nextProps.playing === false && nextProps.id !== this.props.id) ||
+            nextState !== this.state) {
             return true;
         }
         return false;
@@ -113,13 +114,22 @@ class Progress extends React.Component {
             start = start + 1;
     }
 
+    onMouseDown() {
+        window.addEventListener('mouseMove', this.mouseMove, true);
+    }
+
+    onMouseUp() {
+        window.removeEventListener('mouseMove', this.mouseMove, true);
+    }
+
     render() {
         return (
             this.state.activePlaybackbar ? <div onMouseMove={() => this.onMouseMove()} onMouseLeave={() => this.onMouseLeave()} className="playback-bar progress-bar--is-active">
             <div className="playback-bar__progress-time text-white">{this.toMinutesSecond(this.state.duration)}</div>
             <div className="progress-bar">
                 <div className="middle-align progress-bar__bg">
-                    <div className="progress-bar__fg_wrapper" id="timeline" ref={timeline => this.timeline = timeline} onClick={(event) => this.mouseMove(event)}>
+                    <div className="progress-bar__fg_wrapper" id="timeline" ref={timeline => this.timeline = timeline}
+                    onClick={(event) => this.mouseMove(event)}>
                         <div className="progress-bar__fg"  style={{transform: `translateX(${'-'+ this.state.remain+'%'}) `}}></div>
                     </div>
                     <button id="handle" ref={handle => this.handle = handle} className="middle-align progress-bar__slider" style={{left: this.state.width +'%'}}></button>
